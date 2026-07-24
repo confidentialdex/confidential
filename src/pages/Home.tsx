@@ -65,7 +65,7 @@ export default function Home() {
 
   // Fetch live Total Vault TVL with $193K baseline display for Home
   const { degenTvlUsd, primeTvlUsd } = useConfidentialVault();
-  const totalVaultTvl = Math.max(degenTvlUsd + primeTvlUsd, 193000);
+  const totalVaultTvl = degenTvlUsd + primeTvlUsd;
   const displayVaultTvl = formatAbbreviatedFloor(totalVaultTvl);
 
   // Fetch cumulative all-time Global Volume across all historical days from subgraph
@@ -1244,7 +1244,7 @@ export default function Home() {
                   Contrarian Skew Advantage
                 </h3>
                 <p className="edge-card-desc">
-                  Trade smarter against crowded sentiment: Get up to a <strong style={{ color: '#4BFF99' }}>50% discount on price impact</strong> and earn continuous P2P funding rewards when your trade balances Open Interest skew.
+                  Trade smarter against crowded sentiment: Get a <strong style={{ color: '#4BFF99' }}>25% rebate on trading fees</strong> and earn continuous P2P funding rewards when your trade balances Open Interest skew.
                 </p>
               </div>
 
@@ -1261,7 +1261,7 @@ export default function Home() {
                 <div className="widget-flex-row">
                   <span style={{ fontSize: 13, color: '#4BFF99', fontWeight: 600 }}>Contrarian Discount Active</span>
                   <span style={{ backgroundColor: 'rgba(75, 255, 153, 0.15)', color: '#4BFF99', padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
-                    50% Impact Discount
+                    25% Fee Rebate
                   </span>
                 </div>
               </div>
@@ -1276,10 +1276,10 @@ export default function Home() {
                   </span>
                 </div>
                 <h3 className="responsive-card-h3">
-                  Positive Slippage Rewards
+                  Zero Slippage Execution
                 </h3>
                 <p className="edge-card-desc">
-                  Get rewarded when you balance Open Interest. Our Quadratic Slippage Engine gives skew-balancing orders <strong style={{ color: '#4BFF99' }}>positive slippage</strong>, executing your trade at a price better than spot market price.
+                  Get rewarded when you balance Open Interest. Our Quadratic Slippage Engine executes skew-balancing orders with <strong style={{ color: '#4BFF99' }}>zero price impact</strong>, executing your trade precisely at the Pyth oracle price.
                 </p>
               </div>
 
@@ -1295,7 +1295,7 @@ export default function Home() {
                 </div>
                 <div className="widget-flex-row">
                   <span style={{ color: '#fbfff8', fontWeight: 600, fontSize: 14 }}>Confidential 2-Step Keeper</span>
-                  <span style={{ color: '#4BFF99', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>+15.0 bps (Better than Spot)</span>
+                  <span style={{ color: '#4BFF99', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>0.0 bps (Exact Oracle Price)</span>
                 </div>
               </div>
             </div>
@@ -1397,7 +1397,7 @@ export default function Home() {
                 <span style={{ fontSize: 24, fontWeight: 800, color: '#fbfff8', fontFamily: "'JetBrains Mono', monospace" }}><span style={{ color: '#60a5fa' }}>Prime</span> Vault</span>
               </div>
               <p className="vault-desc-p" style={{ color: '#bacbbb', fontSize: 14, lineHeight: '22px', margin: 0 }}>
-                Designed for capital preservation. Prime LPs share trader liabilities proportionally with Degen LPs and enjoy a 60% hard capital protection floor against drawdowns (5-day lockup).
+                Designed for capital preservation. Prime LPs share trader payouts proportionally based on TVL and are protected from bankruptcy, featuring a 60% hard capital protection floor against drawdowns (5-day lockup).
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 <span style={{ color: '#88919e', fontSize: 13 }}>Est. APY</span>
@@ -1410,7 +1410,7 @@ export default function Home() {
                 <span style={{ fontSize: 24, fontWeight: 800, color: '#fbfff8', fontFamily: "'JetBrains Mono', monospace" }}><span style={{ color: '#f97316' }}>Degen</span> Vault</span>
               </div>
               <p className="vault-desc-p" style={{ color: '#bacbbb', fontSize: 14, lineHeight: '22px', margin: 0 }}>
-                Designed for maximum yield hunters. Earn a 3x higher profit multiplier from protocol trading fees and liquidation bonuses while sharing liabilities proportionally (2-day lockup).
+                Designed for high yield tolerance. Earn a 3x higher profit multiplier from protocol fees. Unlike Prime, Degen LPs absorb maximum liability overflow and can face bankruptcy if traders win consecutively (2-day lockup).
               </p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 <span style={{ color: '#88919e', fontSize: 13 }}>Est. APY</span>
@@ -1464,15 +1464,15 @@ export default function Home() {
             {[
               {
                 q: 'What makes Confidential different from traditional perpetual DEXs?',
-                a: 'Confidential is engineered with an advanced modular architecture: multi-asset synthetic leverage (Crypto, Forex, Metals, and Equities), up to 50% price impact discounts for contrarian traders, continuous P2P funding rewards, and dual-vault LP system (Prime Vault & Degen Vault).'
+                a: 'Confidential is built on an upgradeable transparent proxy smart contract architecture, decoupling Core logic, Execution gateway, Pyth Price Oracle, and Vault pools. Features include multi-asset synthetic leverage (Crypto, Forex, Metals, Equities), a 25% trading fee rebate for skew-balancing trades, hourly P2P funding rewards, and dual-vault LPs (Prime & Degen).'
               },
               {
                 q: 'How do Contrarian Skew Advantages work for Traders?',
-                a: 'When you open a trade that helps rebalance the protocol’s overall Open Interest (OI) skew, our Quadratic Slippage Engine rewards you with up to a 50% discount on price impact—executing your order at a price better than spot. Additionally, you receive continuous hourly P2P funding rewards paid by the majority side.'
+                a: 'When opening a trade that balances the overall Open Interest (OI) skew, our Slippage Engine guarantees zero price impact (executing at exact oracle price) and gives you a 25% rebate on your trading fees. Plus, you receive hourly P2P funding rewards paid directly from the majority skew side.'
               },
               {
                 q: 'How do Liquidity Providers (LPs) earn yield in Confidential Vaults?',
-                a: 'LPs deposit USDC into either our Prime Vault (for capital protection) or Degen Vault (for maximized yield). LPs earn real, auto-compounding yield generated directly from platform trading fees, borrow fees, and liquidated collateral.'
+                a: 'LPs deposit USDC to earn 70% of platform fees and liquidated collateral. Yield compounds auto-proportionally between Prime Vault (protected from bankruptcy, 60% floor guarantee) and Degen Vault (3x profit multiplier, high-risk, can go bankrupt). Trader payouts are shared proportionally based on TVL.'
               },
               {
                 q: 'Are there any MEV or front-running risks?',

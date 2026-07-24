@@ -259,9 +259,9 @@ export const useTradeStore = create<TradeStore>()(
             const rawPnl = p.side === 'long'
               ? (markPrice - p.entryPrice) * p.size
               : (p.entryPrice - markPrice) * p.size
-            // Closing fee: 0.04% of original sizeUsd (entryPrice * size) — matches smart contract
+            // Closing fee: 0.05% of original sizeUsd (entryPrice * size) — matches smart contract
             const sizeUsd = p.entryPrice * p.size
-            const closingFee = sizeUsd * 0.0004
+            const closingFee = sizeUsd * 0.0005
             const pnl = rawPnl - closingFee
             const pnlPercent = (pnl / p.collateral) * 100
             return { ...p, markPrice, pnl: +pnl.toFixed(2), pnlPercent: +pnlPercent.toFixed(2) }

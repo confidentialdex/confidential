@@ -151,7 +151,7 @@ export default function Portfolio({ isCompact = false }: { isCompact?: boolean }
           </div>
           <div className="stat-card">
             <div className="stat-label">Fees (Taker / Maker)</div>
-            <div className="stat-value font-mono" style={{ cursor: 'pointer', transition: 'color 0.2s' }}>0.04% / 0.02%</div>
+            <div className="stat-value font-mono" style={{ cursor: 'pointer', transition: 'color 0.2s' }}>0.05% / 0.03%</div>
           </div>
         </div>
 

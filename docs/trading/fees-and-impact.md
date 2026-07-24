@@ -23,10 +23,10 @@ This feature is our most advanced **Anti-Whale Weapon**.
 In centralized exchanges, whales damage prices by eating through orderbook depth. At *Confidential DEX*, *Price Impact* is calculated synthetically using a quadratic formula (exponential power of two) based on the trade size ratio against the coin's *Max Open Interest* limit.
 
 - **Retail Traders:** For small position sizes, the impact is virtually `0.00%`. You won't feel any friction.
-- **Whale Traders:** The larger the order size from a single individual at any given time, the larger the penalty imposed by the smart contract—growing exponentially up to a **Hard Cap of 3.00% (`maxPriceImpactBps = 300`)**. Even for massive orders, your maximum price impact penalty is strictly protected at **3%**. This prevents massive players from selfishly draining the Vault's cash reserves while keeping execution costs predictable.
+- **Whale Traders:** The larger the order size from a single individual at any given time, the larger the penalty imposed by the smart contract—growing exponentially up to a **Hard Cap of 2.00% (`maxPriceImpactBps = 200`)**. Even for massive orders, your maximum price impact penalty is strictly protected at **2%**. This prevents massive players from selfishly draining the Vault's cash reserves while keeping execution costs predictable.
 
 ::: tip Skew-Aware Mechanism (Penalty Discount)
-We heavily favor traders who help balance the market. If the current majority position is LONG (a Skewed Market), and you place a massive **SHORT** order (balancing the Skew), the contract automatically rewards you with a **50% Discount on the Price Impact Penalty**.
+We heavily favor traders who help balance the market. If the current majority position is LONG (a Skewed Market), and you place a massive **SHORT** order (balancing the Skew), the contract automatically rewards you with a **25% Rebate on your Trading Fee** and executes your trade with **Zero Price Impact**.
 :::
 
 ---

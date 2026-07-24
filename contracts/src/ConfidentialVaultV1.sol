@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "./ConfidentialCoreV1.sol";
 import "./ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 interface IERC20 {
     function totalSupply() external view returns (uint256);
@@ -14,16 +15,18 @@ interface IERC20 {
     function decimals() external view returns (uint8);
 }
 
-/// @title ConfidentialVault V1 — Dual Tranche with Epoch Bankruptcy Protection
-/// @notice LPs deposit USDC into either Degen (Junior) or Prime (Senior) vault.
-contract ConfidentialVaultV1 is ReentrancyGuard {
+/// @title ConfidentialVault V1 — Dual Vault Liquidity System (Prime & Degen)
+/// @notice Handles LP deposits, withdrawals, and settles PnL from Trading.
+/// @dev Prime is protected up to primeProtectionBps (20%), Degen absorbs first loss.
+contract ConfidentialVaultV1 is Initializable, ReentrancyGuard {
     // ──────────── State ────────────
     string public constant name = "Confidential Vault Share";
     string public constant symbol = "cVAULT";
     uint8 public constant decimals = 6;
 
-    IERC20 public immutable usdc;
+    IERC20 public usdc;
     ConfidentialCoreV1 public core;
+    address public trading;
 
     uint256 public constant MINIMUM_LIQUIDITY = 1000;
 
@@ -46,12 +49,13 @@ contract ConfidentialVaultV1 is ReentrancyGuard {
     uint256 public primeLockupPeriod = 5 days;
     uint256 public totalBacking; 
 
-    // ── Security Caps ──
-    uint256 public maxDepositPerUser = 1_000_000 * 1e6;
-    uint256 public maxDegenDeposits = 15_000_000 * 1e6; // $15M
-    uint256 public maxPrimeDeposits = 35_000_000 * 1e6; // $35M
-    uint256 public primeProtectionBps = 6000; // 60% capital protected
-    bool public depositsEnabled = true;
+    // ── Caps & Limits ──
+    uint256 public primeProtectionBps; // 20% prime protection
+    uint256 public maxPrimeDeposits;
+    uint256 public maxDegenDeposits;
+    uint256 public maxDepositPerUser;
+    bool public depositsEnabled;
+    bool public withdrawalsEnabled;
 
     // ──────────── Events ────────────
     event Deposit(address indexed user, uint256 amount, uint256 sharesReceived, bool isDegen);
@@ -66,6 +70,7 @@ contract ConfidentialVaultV1 is ReentrancyGuard {
 
     // ──────────── Errors ────────────
     error ZeroAmount();
+    error ZeroAddress();
     error InsufficientShares();
     error LockupNotExpired();
     error InsufficientLiquidity();
@@ -76,7 +81,7 @@ contract ConfidentialVaultV1 is ReentrancyGuard {
     error ExceedsTVLCap();
 
     modifier onlyTrading() {
-        if (msg.sender != core.trading()) revert OnlyTrading();
+        if (msg.sender != trading) revert OnlyTrading();
         _;
     }
 
@@ -85,9 +90,28 @@ contract ConfidentialVaultV1 is ReentrancyGuard {
         _;
     }
 
-    constructor(address _usdc, address _core) {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address _usdc, address _core, address _trading) public initializer {
+        if (_usdc == address(0) || _core == address(0) || _trading == address(0)) revert ZeroAddress();
         usdc = IERC20(_usdc);
         core = ConfidentialCoreV1(_core);
+        trading = _trading;
+
+        primeProtectionBps = 2000;
+        maxPrimeDeposits = 1_000_000 * 1e6;
+        maxDegenDeposits = 500_000 * 1e6;
+        maxDepositPerUser = 100_000 * 1e6;
+        depositsEnabled = true;
+        withdrawalsEnabled = true;
+    }
+
+    function setTrading(address _trading) external onlyOwner {
+        if (_trading == address(0)) revert ZeroAddress();
+        trading = _trading;
     }
 
     // ══════════════════════════════════════════════════════════
@@ -241,13 +265,12 @@ contract ConfidentialVaultV1 is ReentrancyGuard {
 
     function settleAccruedFees(uint256 amount) external onlyTrading {
         if (amount == 0) return;
-        totalBacking = totalBacking > amount ? totalBacking - amount : 0;
+        // FIX CRITICAL-3: Accrued fees are collateral, not Open Interest. Do not modify totalBacking.
         _distributeProfit(amount);
         emit AccruedFeesSettled(amount);
     }
 
     function settlePosition(address trader, uint256 collateral, int256 netPnl) external onlyTrading {
-        totalBacking = totalBacking > collateral ? totalBacking - collateral : 0;
 
         if (netPnl >= 0) {
             uint256 profit = uint256(netPnl);
@@ -338,7 +361,7 @@ contract ConfidentialVaultV1 is ReentrancyGuard {
         uint256 collateral,
         uint256 reward
     ) external onlyTrading {
-        totalBacking = totalBacking > collateral ? totalBacking - collateral : 0;
+        // FIX CRITICAL-2: Do not deduct collateral from totalBacking. TradingV1 releases sizeUsd via releaseBacking().
 
         // MED-3: Defensive check — reward cannot exceed collateral
         if (reward > collateral) reward = collateral;
@@ -474,9 +497,7 @@ contract ConfidentialVaultV1 is ReentrancyGuard {
                 emit EpochReset(false, primeEpoch);
             }
         }
-        
-        // Increase backing to account for the reward now owed to the position
-        totalBacking += amount;
+        // FIX CRITICAL-4: Funding rewards are collateral, not Open Interest. Do not modify totalBacking.
         return amount;
     }
 

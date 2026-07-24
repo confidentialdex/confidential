@@ -43,13 +43,10 @@ export default function Topbar() {
     { to: '/trade', label: t('nav.trade') },
     { to: '/portfolio', label: t('nav.portfolio') },
     { to: '/vaults', label: 'Vaults' },
-    { to: '/referrals', label: t('nav.referrals') },
-    { to: '/points', label: t('nav.points') },
-    { to: '/leaderboard', label: t('nav.leaderboard') },
   ]
 
   const { ready, login } = usePrivy()
-  const { isConnected, address, balance, disconnect } = useArcWallet()
+  const { isConnected, address, balance, disconnect, isPrivyWallet, exportWallet } = useArcWallet()
   const location = useLocation()
   const truncatedAddress = address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : ''
   const { markets, activeMarketId, setActiveMarket, mobileNav, isMarketSelectorOpen, setMarketSelectorOpen, watchlist, toggleWatchlist, marketCategoryFilter, setMarketCategoryFilter } = useTradeStore()
@@ -260,7 +257,19 @@ export default function Topbar() {
                         {balance.toFixed(2)} USDC
                       </div>
                     </div>
-                    <div style={{ padding: '8px' }}>
+                    <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {isPrivyWallet && exportWallet && (
+                        <button
+                          className="btn btn-ghost"
+                          style={{ width: '100%', fontSize: '13px', color: 'var(--color-text1)' }}
+                          onClick={() => {
+                            exportWallet()
+                            setDropdownOpen(false)
+                          }}
+                        >
+                          Export Wallet
+                        </button>
+                      )}
                       <button
                         className="btn btn-ghost"
                         style={{ width: '100%', fontSize: '13px', color: 'var(--color-red)' }}
@@ -368,13 +377,24 @@ export default function Topbar() {
                         )}
                       </button>
                     </div>
-                    <button
-                      className="btn btn-ghost"
-                      style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--color-red)' }}
-                      onClick={() => { disconnect(); setIsMobileMenuOpen(false); }}
-                    >
-                      Disconnect
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {isPrivyWallet && exportWallet && (
+                        <button
+                          className="btn btn-ghost"
+                          style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--color-text1)' }}
+                          onClick={() => { exportWallet(); setIsMobileMenuOpen(false); }}
+                        >
+                          Export Wallet
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-ghost"
+                        style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--color-red)' }}
+                        onClick={() => { disconnect(); setIsMobileMenuOpen(false); }}
+                      >
+                        Disconnect
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

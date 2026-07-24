@@ -132,8 +132,8 @@ export default function Positions() {
                       ? (p.isLong ? (markPrice - p.entryPrice) * sizeBaseAsset : (p.entryPrice - markPrice) * sizeBaseAsset) 
                       : 0
                     
-                    // Estimated closing fee: 0.04% (takerFeeBps=4) of original sizeUsd — matches smart contract
-                    const estClosingFee = p.sizeUsd * 0.0004
+                    // Estimated closing fee: 0.05% (takerFeeBps=5) of original sizeUsd — matches smart contract
+                    const estClosingFee = p.sizeUsd * 0.0005
                     const pnl = rawPnl - estClosingFee
                     
                     const pnlPercent = p.collateral > 0 && isFinite(pnl) ? (pnl / p.collateral) * 100 : 0

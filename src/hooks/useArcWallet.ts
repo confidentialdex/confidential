@@ -10,7 +10,7 @@ export function useArcWallet() {
   const { address: wagmiAddress, isConnected: wagmiConnected, chainId } = useAccount()
   const { disconnect: wagmiDisconnect } = useDisconnect()
   const { switchChain } = useSwitchChain()
-  const { authenticated, user, logout: privyLogout, login } = usePrivy()
+  const { authenticated, user, logout: privyLogout, login, exportWallet } = usePrivy()
 
 
   const privyAddress = user?.wallet?.address
@@ -71,6 +71,7 @@ export function useArcWallet() {
       ? privyEmail.length > 15 ? `${privyEmail.slice(0, 12)}...` : privyEmail
       : 'Loading...'
 
+  const isPrivyWallet = user?.wallet?.walletClientType === 'privy'
   const connect = () => {
     login()
   }
@@ -91,5 +92,7 @@ export function useArcWallet() {
     switchNetwork: () => switchChain?.({ chainId: arcTestnet.id }),
     ready: true,
     chainId,
+    exportWallet,
+    isPrivyWallet
   }
 }

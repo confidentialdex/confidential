@@ -15,13 +15,15 @@ interface IPyth {
     function getUpdateFee(bytes[] calldata updateData) external view returns (uint256);
 }
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 /// @title PythPriceOracle — Oracle adapter for Confidential Perpetual DEX
 /// @notice Wraps the Pyth on-chain contract to provide validated price feeds
-contract PythPriceOracle {
+contract PythPriceOracle is Initializable {
     // ──────────── State ────────────
-    IPyth public immutable pyth;
+    IPyth public pyth;
     address public owner;
-    uint256 public maxStaleness = 60; // seconds
+    uint256 public maxStaleness; // seconds
 
     // pairId (e.g. keccak256("BTC/USDC")) => Pyth price feed ID
     mapping(bytes32 => bytes32) public priceFeedIds;
@@ -41,9 +43,15 @@ contract PythPriceOracle {
         _;
     }
 
-    constructor(address _pyth) {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address _pyth) public initializer {
         pyth = IPyth(_pyth);
         owner = msg.sender;
+        maxStaleness = 60;
     }
 
     // ──────────── Admin ────────────

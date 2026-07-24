@@ -45,13 +45,13 @@ export default function Vault() {
   }
 
   const vaultVolume = useMemo(() => {
-    if (!globalDeposits) return 334121.85
+    if (!globalDeposits) return 0
     const vol = globalDeposits.reduce((acc, d) => acc + d.amount, 0)
-    return Math.max(vol, 334121.85)
+    return vol
   }, [globalDeposits])
 
-  const totalTvl = Math.max(degenTvlUsd + primeTvlUsd, 193156.40)
-  const displayAvailableLiquidity = Math.max(availableLiquidity, 192912.18)
+  const totalTvl = degenTvlUsd + primeTvlUsd
+  const displayAvailableLiquidity = availableLiquidity
 
   const pnlData = useMemo(() => {
     if (!globalDeposits || globalDeposits.length === 0 || !activeTab) {
@@ -233,7 +233,7 @@ export default function Vault() {
                 </div>
               </div>
               <div className="tc-desc">
-                The maximum-yield engine. Shares trader liabilities proportionally with Prime LPs based on TVL, and absorbs any overflow if Prime hits its protection floor. In return, Degen LPs capture a 3x profit multiplier across all platform fees and liquidations.
+                The maximum-yield engine. Shares trader liabilities proportionally with Prime LPs based on TVL, and absorbs any overflow if Prime hits its protection floor. In return, Degen LPs capture a 3x profit multiplier across all platform fees, borrow fees, and liquidations.
               </div>
               <div className="tc-user-balance">
                 <span>Your Balance:</span>
@@ -268,7 +268,7 @@ export default function Vault() {
                 </div>
               </div>
               <div className="tc-desc">
-                The capital preservation tier. Shares payout liabilities proportionally with Degen LPs. Equipped with a 60% hard capital protection floor and a 40% protocol circuit breaker, ensuring steady, institutional-grade security.
+                The capital preservation tier. Shares trader payouts proportionally based on TVL and is protected from bankruptcy. Equipped with a 60% hard capital protection floor, ensuring steady, institutional-grade security.
               </div>
               <div className="tc-user-balance">
                 <span>Your Balance:</span>

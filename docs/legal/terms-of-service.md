@@ -24,7 +24,7 @@ Trading digital assets and utilizing leveraged perpetual contracts involves subs
 - **Smart Contract Risk:** While our contracts are battle-tested and include anti-exploit mechanisms, blockchain software can contain bugs or vulnerabilities. You use the Protocol at your own risk.
 - **Liquidation Risk:** Due to the nature of leveraged trading, volatile market movements can result in the total loss of your collateral through forced liquidation.
 - **Market Risk:** Digital asset prices are highly volatile. We are not responsible for any financial losses incurred due to market fluctuations, Oracle delays, or price impacts resulting from our Quadratic Impact algorithm.
-- **No Guarantees:** Past performance of Vault yields (Degen/Prime) does not guarantee future returns. The Degen Vault carries a "First-Loss" risk up to the total capital invested.
+- **No Guarantees:** Past performance of Vault yields (Degen/Prime) does not guarantee future returns. The Degen Vault carries a "Proportional Shared-Loss and Overflow" risk up to the total capital invested, protecting the Prime Vault floor.
 
 ## 4. User Responsibilities
 - You are entirely responsible for the security of your Web3 wallet, private keys, and passwords. 

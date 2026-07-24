@@ -2,11 +2,12 @@
 pragma solidity ^0.8.24;
 
 import "./PythPriceOracle.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title ConfidentialCore V1 — Central parameter store, fee router & risk engine
 /// @notice Manages trading pairs, fee distribution, funding rates, price impact, and emergency controls
 /// @dev Security: Timelock on critical params, circuit breaker, utilization cap enforcement
-contract ConfidentialCoreV1 {
+contract ConfidentialCoreV1 is Initializable {
     // ──────────── Types ────────────
     struct PairConfig {
         bytes32 pairId;
@@ -16,6 +17,13 @@ contract ConfidentialCoreV1 {
         uint256 maxShortOI;       // max short open interest in USDC (6 decimals)
         uint256 maxPositionPct;   // max % of OI one user can hold (basis points, 2000 = 20%)
         bool active;
+    }
+
+    struct ImpactResult {
+        int256  impactBps;       // Penalty BPS (>= 0, applied to overshoot)
+        uint256 balancingSize;   // Portion that balances OI (gets fee discount)
+        uint256 overshootSize;   // Portion that increases skew (gets penalty)
+        bool    isBalancing;     // Is the trade balancing at all?
     }
 
     // ──────────── State ────────────
@@ -30,25 +38,25 @@ contract ConfidentialCoreV1 {
     address public keeper;
 
     // ── Fee Configuration (Maker/Taker Split) ──
-    uint256 public takerFeeBps = 4;   // 0.04% — Market, Stop Market, TWAP
-    uint256 public makerFeeBps = 2;   // 0.02% — Limit Order
+    uint256 public takerFeeBps;
+    uint256 public makerFeeBps;
 
     // Fee split in basis points (total must = 10000)
-    uint256 public vaultFeeBps   = 7000;  // 70% → LP rewards
-    uint256 public treasuryFeeBps = 3000; // 30% → Team + Airdrop fund
+    uint256 public vaultFeeBps;
+    uint256 public treasuryFeeBps;
 
     // ── Vault Utilization Cap ──
-    uint256 public utilizationCapBps = 8000; // 80%
+    uint256 public utilizationCapBps;
 
     // ── Funding Rate System (Dynamic P2P) ──
     // Continuous funding: majority side pays minority side based on OI skew ratio
     // Rate scales with (longOI - shortOI) / (longOI + shortOI), not maxOI
-    uint256 public baseFundingRate = 3e15; // 0.3% per day at 100% skew (1e18 scale)
+    uint256 public baseFundingRate;
     mapping(bytes32 => int256) public cumulativeFundingIndex; // per pair, scaled 1e18
     mapping(bytes32 => uint256) public lastFundingUpdate;     // timestamp per pair
 
     // ── Dynamic Price Impact ──
-    uint256 public maxPriceImpactBps = 300; // 3% max impact
+    uint256 public maxPriceImpactBps;
 
     // ── Pair Registry ──
     mapping(bytes32 => PairConfig) public pairs;
@@ -61,15 +69,15 @@ contract ConfidentialCoreV1 {
     mapping(bytes32 => mapping(address => uint256)) public userShortOI;
 
     // ── Anti-Manipulation: Position Cooldown ──
-    uint256 public minPositionDuration = 5; // 5 seconds — prevents flash loan attacks
+    uint256 public minPositionDuration; // 5 seconds — prevents flash loan attacks
 
     // ── Circuit Breaker ──
-    uint256 public maxDrawdownBps = 4000; // 40% max absolute prime loss triggers pause
+    uint256 public maxDrawdownBps; // 40% max absolute prime loss triggers pause
     uint256 public totalHistoricalPrimeDeposits;
     uint256 public absolutePrimeLoss;
 
     // USDC token (Arc native USDC)
-    address public immutable usdc;
+    address public usdc;
 
     // ──────────── Events ────────────
     event PairAdded(bytes32 indexed pairId, uint256 maxLeverage, uint256 maxLongOI, uint256 maxShortOI);
@@ -110,11 +118,26 @@ contract ConfidentialCoreV1 {
         _;
     }
 
-    constructor(address _usdc, address _oracle) {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address _usdc, address _oracle) public initializer {
         if (_usdc == address(0) || _oracle == address(0)) revert ZeroAddress();
         owner = msg.sender;
         usdc = _usdc;
         oracle = PythPriceOracle(_oracle);
+
+        takerFeeBps = 5;
+        makerFeeBps = 3;
+        vaultFeeBps = 7000;
+        treasuryFeeBps = 3000;
+        utilizationCapBps = 8000;
+        baseFundingRate = 3e15;
+        maxPriceImpactBps = 200;
+        minPositionDuration = 5;
+        maxDrawdownBps = 4000;
     }
 
     // ══════════════════════════════════════════════════════════
@@ -358,40 +381,58 @@ contract ConfidentialCoreV1 {
     //              DYNAMIC PRICE IMPACT
     // ══════════════════════════════════════════════════════════
 
-    /// @notice Calculate price impact in basis points based on OI skew
-    /// @dev Positive = unfavorable (adds to entry price for longs), Negative = favorable
-    function calcPriceImpact(
+    /// @notice Calculate Price Impact (Split-Portion)
+    /// @dev Calculates penalty and discount sizes separately based on OI skew
+    function calcImpact(
         bytes32 pairId, 
         bool isLong, 
         uint256 sizeUsd
-    ) external view returns (int256 impactBps) {
+    ) external view returns (ImpactResult memory result) {
         PairConfig memory pair = pairs[pairId];
-        uint256 maxOI = isLong ? pair.maxLongOI : pair.maxShortOI;
-        if (maxOI == 0) return 0;
-
-        // Determine if this trade increases or decreases skew
-        bool increasesSkew;
-        if (isLong) {
-            increasesSkew = longOI[pairId] >= shortOI[pairId];
-        } else {
-            increasesSkew = shortOI[pairId] >= longOI[pairId];
-        }
-
-        // Quadratic Impact Formula: (sizeUsd / maxOI)^2 * maxPriceImpactBps
-        // We use 1e6 precision for the ratio
-        uint256 ratio = (sizeUsd * 1e6) / maxOI;
-        uint256 quadraticRatio = (ratio * ratio) / 1e6;
+        uint256 lOI = longOI[pairId];
+        uint256 sOI = shortOI[pairId];
         
-        uint256 rawImpact = (quadraticRatio * maxPriceImpactBps) / 1e6;
-        if (rawImpact > maxPriceImpactBps) rawImpact = maxPriceImpactBps;
+        uint256 maxOI = isLong ? pair.maxLongOI : pair.maxShortOI;
+        if (maxOI == 0 || sizeUsd == 0) return result;
 
-        if (increasesSkew) {
-            // Penalize: trader makes skew worse → pay premium
-            return int256(rawImpact);
+        // Neutral Case
+        if (lOI == sOI || lOI == 0 || sOI == 0) {
+            result.overshootSize = sizeUsd;
+            result.isBalancing = false;
         } else {
-            // Reward: trader helps balance → get discount (half the impact)
-            return -int256(rawImpact / 2);
+            // Determine balancing vs merusak
+            if ((isLong && sOI > lOI) || (!isLong && lOI > sOI)) {
+                result.isBalancing = true;
+                uint256 gap = isLong ? (sOI - lOI) : (lOI - sOI);
+                
+                if (sizeUsd <= gap) {
+                    result.balancingSize = sizeUsd;
+                    result.overshootSize = 0;
+                } else {
+                    result.balancingSize = gap;
+                    result.overshootSize = sizeUsd - gap;
+                }
+            } else {
+                result.isBalancing = false;
+                result.balancingSize = 0;
+                result.overshootSize = sizeUsd;
+            }
         }
+        
+        // Quadratic Impact for Overshoot portion
+        if (result.overshootSize > 0) {
+            uint256 ratio = (result.overshootSize * 1e6) / maxOI;
+            uint256 quadraticRatio = (ratio * ratio) / 1e6;
+            
+            uint256 rawImpact = (quadraticRatio * maxPriceImpactBps) / 1e6;
+            if (rawImpact > maxPriceImpactBps) rawImpact = maxPriceImpactBps;
+            
+            result.impactBps = int256(rawImpact);
+        } else {
+            result.impactBps = 0;
+        }
+        
+        return result;
     }
 
     // ══════════════════════════════════════════════════════════

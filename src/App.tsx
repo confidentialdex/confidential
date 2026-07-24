@@ -67,9 +67,7 @@ export default function App() {
           <Route path="/trade" element={<Trade />} />
           <Route path="/vaults" element={<Vault />} />
           <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/referrals" element={<DummyPage title="Referrals" />} />
-          <Route path="/points" element={<DummyPage title="Points" />} />
-          <Route path="/leaderboard" element={<DummyPage title="Leaderboard" />} />
+
           {/* Catch-all: redirect any unknown route to Home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

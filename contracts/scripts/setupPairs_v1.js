@@ -12,7 +12,8 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config();
 
 async function main() {
-  const provider = new ethers.JsonRpcProvider("https://rpc.testnet.arc.network");
+  const rpcUrl = process.env.ARC_TESTNET_RPC_URL || "https://rpc.testnet.arc.network";
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
   // Read core address from latest deploy

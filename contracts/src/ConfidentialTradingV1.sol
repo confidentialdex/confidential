@@ -5,11 +5,12 @@ import "./ConfidentialCoreV1.sol";
 import "./ConfidentialVaultV1.sol";
 import "./PythPriceOracle.sol";
 import "./ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-/// @title ConfidentialTrading V1 — Main trading engine
-/// @notice Handles order placement, execution (via keepers), and liquidation.
-/// @dev Security: CEI pattern used throughout, TWAP support, TP/SL, Continuous Funding, safe ERC20 transfers.
-contract ConfidentialTradingV1 is ReentrancyGuard {
+/// @title ConfidentialTrading V1 — Core Execution Engine
+/// @notice Handles order placement, execution, liquidations, and PnL calculation.
+/// @dev Integrates closely with ConfidentialCoreV1 (parameters) and ConfidentialVaultV1 (liquidity).
+contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
     // ──────────── Types ────────────
     struct Position {
         bytes32 pairId;
@@ -93,11 +94,18 @@ contract ConfidentialTradingV1 is ReentrancyGuard {
     event PositionIncreased(uint256 indexed positionId, address indexed trader, uint256 additionalSizeUsd, uint256 newEntryPrice, uint256 newLiquidationPrice);
     event PositionPartialClose(uint256 indexed positionId, address indexed trader, uint256 closeSizeUsd, uint256 exitPrice, int256 pnl);
 
-    constructor(address _usdc, address _core, address _vault, address _oracle) {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address _usdc, address _core, address _vault, address _oracle) public initializer {
         usdc = IERC20(_usdc);
         core = ConfidentialCoreV1(_core);
         vault = ConfidentialVaultV1(_vault);
         oracle = PythPriceOracle(_oracle);
+        nextOrderId = 1;
+        nextPositionId = 1;
     }
 
     /// @notice Allow the contract to receive ETH (Arc native tokens) for Pyth Oracle refunds
@@ -428,16 +436,22 @@ contract ConfidentialTradingV1 is ReentrancyGuard {
     }
 
     function _executeOpen(PendingOrder memory order, uint256 currentPrice) internal {
-        int256 impactBps = core.calcPriceImpact(order.pairId, order.isLong, order.sizeUsd);
+        ConfidentialCoreV1.ImpactResult memory impact = core.calcImpact(order.pairId, order.isLong, order.sizeUsd);
         
         uint256 entryPrice = currentPrice;
-        if (impactBps > 0) {
-            uint256 impactVal = (entryPrice * uint256(impactBps)) / 10000;
+        if (impact.impactBps > 0) {
+            uint256 impactVal = (entryPrice * uint256(impact.impactBps)) / 10000;
             entryPrice = order.isLong ? entryPrice + impactVal : entryPrice - impactVal;
-        } else if (impactBps < 0) {
-            uint256 impactVal = (entryPrice * uint256(-impactBps)) / 10000;
-            entryPrice = order.isLong ? entryPrice - impactVal : entryPrice + impactVal;
         }
+
+        uint256 discount = 0;
+        if (impact.isBalancing && impact.balancingSize > 0) {
+            uint256 balancingFee = (order.feePaid * impact.balancingSize) / order.sizeUsd;
+            discount = (balancingFee * 2500) / 10000; // 25% discount
+        }
+
+        uint256 actualFee = order.feePaid - discount;
+        uint256 finalCollateral = order.collateral + discount;
 
         uint256 posId = nextPositionId++;
         Position storage pos = positions[posId];
@@ -445,10 +459,10 @@ contract ConfidentialTradingV1 is ReentrancyGuard {
         pos.trader = order.trader;
         pos.isLong = order.isLong;
         pos.sizeUsd = order.sizeUsd;
-        pos.collateral = order.collateral;
+        pos.collateral = finalCollateral;
         pos.entryPrice = entryPrice;
         pos.leverage = order.leverage;
-        pos.liquidationPrice = _calcLiqPrice(entryPrice, order.sizeUsd, order.collateral, order.isLong);
+        pos.liquidationPrice = _calcLiqPrice(entryPrice, order.sizeUsd, finalCollateral, order.isLong);
         pos.openedAt = block.timestamp;
         pos.lastRolloverSettled = block.timestamp;
         pos.isOpen = true;
@@ -461,11 +475,11 @@ contract ConfidentialTradingV1 is ReentrancyGuard {
         core.increaseOI(order.pairId, order.trader, order.isLong, order.sizeUsd);
         
         // Move collateral to Vault
-        _safeTransfer(address(vault), order.collateral);
-        vault.reserveBacking(order.collateral);
+        _safeTransfer(address(vault), finalCollateral);
+        vault.reserveBacking(order.sizeUsd);
 
         // Distribute fees
-        _distributeFee(order.feePaid);
+        _distributeFee(actualFee);
 
         userPositions[order.trader].push(posId);
 
@@ -502,6 +516,7 @@ contract ConfidentialTradingV1 is ReentrancyGuard {
         // when loss spills over from Degen into Prime Vault
         
         // 4. Settle with Vault — one clean call
+        vault.releaseBacking(pos.sizeUsd);
         vault.settlePosition(pos.trader, pos.collateral, netPnl);
 
         // 5. Distribute closing fee — always distribute (fee already deducted from netPnl)
@@ -611,9 +626,11 @@ contract ConfidentialTradingV1 is ReentrancyGuard {
         // CEI Pattern — update state before transfers
         pos.isOpen = false;
         core.decreaseOI(pos.pairId, pos.trader, pos.isLong, pos.sizeUsd);
+        
+        // FIX CRITICAL-1: Free up Vault Open Interest capacity
+        vault.releaseBacking(pos.sizeUsd);
 
-        // Settle all fees (accrued + closing) into Vault first
-        // This releases exact `settledTotal` from totalBacking and credits profit to Vault
+        // Settle all fees (accrued + closing) into Vault
         if (settledTotal > 0) {
             vault.settleAccruedFees(settledTotal);
         }
@@ -758,7 +775,6 @@ contract ConfidentialTradingV1 is ReentrancyGuard {
 
         // Transfer USDC from trader to Vault
         _safeTransferFrom(msg.sender, address(vault), amount);
-        vault.reserveBacking(amount);
 
         // Update position
         pos.collateral += amount;
@@ -825,7 +841,6 @@ contract ConfidentialTradingV1 is ReentrancyGuard {
         pos.leverage = newLeverage;
         pos.liquidationPrice = newLiqPrice;
 
-        vault.releaseBacking(amount);
         vault.returnCollateral(pos.trader, amount);
 
         emit CollateralRemoved(order.positionId, pos.trader, amount, newLiqPrice);
@@ -886,32 +901,38 @@ contract ConfidentialTradingV1 is ReentrancyGuard {
         uint256 newLeverage = (pos.sizeUsd + additionalSizeUsd) / (pos.collateral + addCollateralAmt);
         core.validateOpenPosition(pos.pairId, pos.trader, pos.isLong, additionalSizeUsd, newLeverage);
 
-        int256 impactBps = core.calcPriceImpact(pos.pairId, pos.isLong, additionalSizeUsd);
+        ConfidentialCoreV1.ImpactResult memory impact = core.calcImpact(pos.pairId, pos.isLong, additionalSizeUsd);
         uint256 addEntryPrice = currentPrice;
-        if (impactBps > 0) {
-            uint256 impactVal = (addEntryPrice * uint256(impactBps)) / 10000;
+        if (impact.impactBps > 0) {
+            uint256 impactVal = (addEntryPrice * uint256(impact.impactBps)) / 10000;
             addEntryPrice = pos.isLong ? addEntryPrice + impactVal : addEntryPrice - impactVal;
-        } else if (impactBps < 0) {
-            uint256 impactVal = (addEntryPrice * uint256(-impactBps)) / 10000;
-            addEntryPrice = pos.isLong ? addEntryPrice - impactVal : addEntryPrice + impactVal;
         }
+
+        uint256 discount = 0;
+        if (impact.isBalancing && impact.balancingSize > 0) {
+            uint256 balancingFee = (fee * impact.balancingSize) / additionalSizeUsd;
+            discount = (balancingFee * 2500) / 10000;
+        }
+
+        uint256 actualFee = fee - discount;
+        uint256 finalAddCollateralAmt = addCollateralAmt + discount;
 
         uint256 posBase = (pos.sizeUsd * 1e18) / pos.entryPrice;
         uint256 addBase = (additionalSizeUsd * 1e18) / addEntryPrice;
         uint256 newEntryPrice = ((pos.sizeUsd + additionalSizeUsd) * 1e18) / (posBase + addBase);
 
         pos.sizeUsd += additionalSizeUsd;
-        pos.collateral += addCollateralAmt;
+        pos.collateral += finalAddCollateralAmt;
         pos.entryPrice = newEntryPrice;
         pos.leverage = pos.sizeUsd / pos.collateral;
         pos.liquidationPrice = _calcLiqPrice(newEntryPrice, pos.sizeUsd, pos.collateral, pos.isLong);
 
         core.increaseOI(pos.pairId, pos.trader, pos.isLong, additionalSizeUsd);
 
-        _safeTransfer(address(vault), addCollateralAmt);
-        vault.reserveBacking(addCollateralAmt);
+        _safeTransfer(address(vault), finalAddCollateralAmt);
+        vault.reserveBacking(additionalSizeUsd);
 
-        _distributeFee(fee);
+        _distributeFee(actualFee);
 
         emit PositionIncreased(order.positionId, pos.trader, additionalSizeUsd, newEntryPrice, pos.liquidationPrice);
     }
@@ -989,6 +1010,7 @@ contract ConfidentialTradingV1 is ReentrancyGuard {
 
         core.decreaseOI(pos.pairId, pos.trader, pos.isLong, closeSizeUsd);
 
+        vault.releaseBacking(closeSizeUsd);
         vault.settlePosition(pos.trader, closeCollateral, netPnl);
 
         if (closingFee > 0) {

@@ -72,14 +72,14 @@ The codebase is organized as a monorepo consisting of the smart contract suite, 
 ### 1. Dual-Tranche Vault (ERC-4626 cUSDC)
 Platform liquidity is provided by depositors into a tokenized vault divided into two risk-reward segments (*tranches*) with a maximum absolute TVL cap of **$50,000,000 USDC**:
 
-*   **Degen Vault (High Yield, High Risk):** Capped at **$15,000,000** (30% TVL). Earns **3x** the baseline share of trading fees, liquidation rewards, borrow fees, and trader losses. However, it takes the first hit during trader wins, allowing drawdown down to $0 (triggering an Epoch reset).
+*   **Degen Vault (High Yield, High Risk):** Capped at **$15,000,000** (30% TVL). Earns **3x** the baseline share of trading fees, liquidation rewards, borrow fees, and trader losses. Shares trader payouts proportionally based on TVL, and absorbs any overflow if Prime hits its protection floor, allowing drawdown down to $0 (triggering an Epoch reset).
 *   **Prime Vault (Capital Protected, Low Risk):** Capped at **$35,000,000** (70% TVL). Earns 1x baseline profit shares. Mechanically protected from bankruptcy by a strict **60% capital protection floor** (minimum 60% of historic assets cannot be drained by trader payouts).
 
 ### 2. Risk Management & Safeguards
 *   **Utilization Cap (80%):** Trader positions cannot be opened if the vault cash utilization exceeds 80%. This guarantees a 20% cash buffer so LPs can withdraw their capital at any time.
 *   **Emergency Auto-Deleveraging (ADL):** If high volatility causes vault utilization to surge past **95%**, the keeper network is authorized to force-close the most profitable trading positions to return liquidity to safe levels.
 *   **Anti-MEV / Flash Loan Cooldown:** A mandatory 5-second cooldown is enforced between opening and closing a position to prevent sandwich and flash loan attack vectors.
-*   **Dynamic Quadratic Price Impact:** To prevent market manipulation by whales, trade price impact is calculated exponentially relative to the pair's Open Interest. PAIR balancing trades (reducing skew) receive a **50% discount** on price impact.
+*   **Dynamic Quadratic Price Impact:** To prevent market manipulation by whales, trade price impact is calculated exponentially relative to the pair's Open Interest. PAIR balancing trades (reducing skew) receive a **25% rebate** on trading fees and execute with zero price impact.
 
 ### 3. Unified Keeper Economics (`feederBot.cjs`)
 The network is automated by permissionless Keepers running the custom keeper bot:
@@ -98,11 +98,11 @@ For an in-depth understanding of the platform's tier-1 circuit breakers, quadrat
 
 | Contract | Address | Explorer Link |
 | :--- | :--- | :--- |
-| **ConfidentialCoreV1** | `0xC3EB0406FF2601D452673710e859Fbf75A0B892d` | [View Explorer](https://testnet.arcscan.app/address/0xC3EB0406FF2601D452673710e859Fbf75A0B892d) |
-| **ConfidentialTradingV1** | `0x266C76800b5bdEd90c246AC60319831078fA28A4` | [View Explorer](https://testnet.arcscan.app/address/0x266C76800b5bdEd90c246AC60319831078fA28A4) |
-| **ConfidentialVaultV1** | `0x5F4d94b9E92Bb09B647a2D044C488F1947427f4c` | [View Explorer](https://testnet.arcscan.app/address/0x5F4d94b9E92Bb09B647a2D044C488F1947427f4c) |
+| **ConfidentialCoreV1 (Proxy)** | `0xBe7b5a030b9e30BD4F6a2Cdf3De2ab14d4E49767` | [View Explorer](https://testnet.arcscan.app/address/0xBe7b5a030b9e30BD4F6a2Cdf3De2ab14d4E49767) |
+| **ConfidentialTradingV1 (Proxy)** | `0x26c357F2d84842d67F584E6b532bC0d94dC29fEd` | [View Explorer](https://testnet.arcscan.app/address/0x26c357F2d84842d67F584E6b532bC0d94dC29fEd) |
+| **ConfidentialVaultV1 (Proxy)** | `0xE9723B722Db4516F1e807ef25e15b61170459dA5` | [View Explorer](https://testnet.arcscan.app/address/0xE9723B722Db4516F1e807ef25e15b61170459dA5) |
 | **USDC Mock Token** | `0x3600000000000000000000000000000000000000` | [View Explorer](https://testnet.arcscan.app/address/0x3600000000000000000000000000000000000000) |
-| **Pyth Oracle** | `0x897b9947185079B42d94CbbF332192CEFd9ACCFA` | [View Explorer](https://testnet.arcscan.app/address/0x897b9947185079B42d94CbbF332192CEFd9ACCFA) |
+| **Pyth Oracle (Proxy)** | `0x85ce6Ed04e2bCfdde5B1994d443836AeAdCa3176` | [View Explorer](https://testnet.arcscan.app/address/0x85ce6Ed04e2bCfdde5B1994d443836AeAdCa3176) |
 
 ---
 

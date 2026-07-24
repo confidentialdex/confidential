@@ -143,38 +143,75 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
   const baseSize = inputCurrency === 'BASE' ? sizeNum : (effectivePrice ? sizeNum / effectivePrice : 0)
   const usdSize = inputCurrency === 'USD' ? sizeNum : (sizeNum * effectivePrice)
 
-  // --- Price Impact Calculation ---
+  // --- Price Impact & Discount Calculation ---
   const sizeUsdValue = Number(usdSize) || 0;
   let priceImpactPct = 0;
   let priceImpactVal = 0;
+  let feeDiscountUsd = 0;
 
   if (sizeUsdValue > 0 && maxOISide > 0) {
-    const isIncreasingSkew = side === 'long' ? longOIVal >= shortOIVal : shortOIVal >= longOIVal;
-    const ratio = sizeUsdValue / maxOISide;
-    let rawImpactBps = (ratio * ratio) * 300; // maxPriceImpactBps = 300
-    if (rawImpactBps > 300) rawImpactBps = 300; // Cap at max
+    let balancingSize = 0;
+    let overshootSize = 0;
+    let isBalancing = false;
 
-    const impactBps = isIncreasingSkew ? rawImpactBps : -(rawImpactBps / 2);
-    
-    priceImpactPct = impactBps / 100; // Convert bps to percent
-    priceImpactVal = (sizeUsdValue * priceImpactPct) / 100;
+    // Neutral Case
+    if (longOIVal === shortOIVal || longOIVal === 0 || shortOIVal === 0) {
+      overshootSize = sizeUsdValue;
+      isBalancing = false;
+    } else {
+      // Determine balancing vs merusak
+      if ((side === 'long' && shortOIVal > longOIVal) || (side === 'short' && longOIVal > shortOIVal)) {
+        isBalancing = true;
+        const gap = side === 'long' ? (shortOIVal - longOIVal) : (longOIVal - shortOIVal);
+        if (sizeUsdValue <= gap) {
+          balancingSize = sizeUsdValue;
+          overshootSize = 0;
+        } else {
+          balancingSize = gap;
+          overshootSize = sizeUsdValue - gap;
+        }
+      } else {
+        isBalancing = false;
+        balancingSize = 0;
+        overshootSize = sizeUsdValue;
+      }
+    }
+
+    // Quadratic Impact for Overshoot portion
+    if (overshootSize > 0) {
+      const ratio = overshootSize / maxOISide;
+      let rawImpactBps = (ratio * ratio) * 200; // maxPriceImpactBps = 200
+      if (rawImpactBps > 200) rawImpactBps = 200; // Cap at max
+      
+      priceImpactPct = rawImpactBps / 100;
+      priceImpactVal = (overshootSize * priceImpactPct) / 100;
+    }
+
+    // 25% Fee Discount for Balancing portion
+    if (isBalancing && balancingSize > 0) {
+      const feeMultiplier = orderType === 'limit' ? 0.0003 : 0.0005;
+      const balancingFee = balancingSize * feeMultiplier;
+      feeDiscountUsd = balancingFee * 0.25; // 25% discount
+    }
   }
 
   const orderSummary = useMemo(() => {
     if (!effectivePrice || !sizeNum) return null
     const notional = usdSize
     const collateral = notional / leverage
-    const feeMultiplier = orderType === 'limit' ? 0.0002 : 0.0004
-    const fees = notional * feeMultiplier
+    const feeMultiplier = orderType === 'limit' ? 0.0003 : 0.0005
+    const originalFees = notional * feeMultiplier
+    const fees = Math.max(0, originalFees - feeDiscountUsd)
     const liqMul = side === 'long' ? 1 - 0.9 / leverage : 1 + 0.9 / leverage
     return {
       collateral: collateral.toFixed(2),
       notional: notional.toFixed(2),
       liqPrice: (effectivePrice * liqMul).toFixed(2),
       fees: fees.toFixed(2),
+      feeDiscount: feeDiscountUsd.toFixed(2),
       totalRequired: collateral + fees
     }
-  }, [effectivePrice, sizeNum, leverage, side, usdSize])
+  }, [effectivePrice, sizeNum, leverage, side, usdSize, feeDiscountUsd])
 
   const handleSideChange = (newSide: OrderSide) => {
     if (newSide === side) return;
@@ -192,7 +229,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
   const handleSizePercentChange = (percent: number) => {
     setSizePercent(percent)
     if (!activeMarket || !effectivePrice || !isConnected || balance <= 0) return
-    const feeMultiplier = orderType === 'limit' ? 0.0002 : 0.0004
+    const feeMultiplier = orderType === 'limit' ? 0.0003 : 0.0005
     const maxNotional = balance / (1 / leverage + feeMultiplier)
     
     if (inputCurrency === 'USD') {
@@ -379,7 +416,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
         </button>
 
         <button 
-          onClick={() => { setOrderType('limit'); setIsProDropdownOpen(false); if (activeMarket?.price && activeMarket.price > 0) { const p = activeMarket.price; setPrice(p >= 1000 ? p.toFixed(1) : p >= 1 ? p.toFixed(2) : p.toFixed(6)); } else { setPrice(''); } setTriggerPrice(''); setDurationHours('1'); setDurationMins('0'); }}
+          onClick={() => { setOrderType('limit'); setIsProDropdownOpen(false); setPrice(''); setTriggerPrice(''); setDurationHours('1'); setDurationMins('0'); }}
           style={{ background: 'none', border: 'none', color: orderType === 'limit' ? '#fff' : '#8e8e93', fontSize: '15px', fontWeight: orderType === 'limit' ? 600 : 500, cursor: 'pointer', padding: 0, position: 'relative' }}
         >
           Limit
@@ -465,14 +502,13 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <span style={{ fontSize:11, color:'#8e8e93' }}>Limit Price</span>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <span onClick={() => { if (!activeMarket?.price) return; setPrice(activeMarket.price >= 1000 ? activeMarket.price.toFixed(1) : activeMarket.price >= 1 ? activeMarket.price.toFixed(2) : activeMarket.price.toFixed(6)); }} style={{ fontSize: 10, cursor: 'pointer', color: '#fbbf24', background: 'rgba(251, 191, 36, 0.1)', padding: '2px 6px', borderRadius: 4, fontWeight: 600, transition: 'background 0.2s' }}>Market</span>
                   {(side === 'long' ? [-1, -2, -5] : [1, 2, 5]).map(p => (
                     <span key={p} onClick={() => { if (!activeMarket?.price) return; const adj = activeMarket.price * (1 + p / 100); setPrice(adj >= 1000 ? adj.toFixed(1) : adj >= 1 ? adj.toFixed(2) : adj.toFixed(6)); }} style={{ fontSize: 10, cursor: 'pointer', color: p < 0 ? '#4BFF99' : '#ff4b4b', background: p < 0 ? 'rgba(75, 255, 153, 0.1)' : 'rgba(255, 75, 75, 0.1)', padding: '2px 6px', borderRadius: 4, fontWeight: 600, transition: 'background 0.2s' }}>{p > 0 ? '+' : ''}{p}%</span>
                   ))}
                 </div>
               </div>
               <div style={{ display:'flex', alignItems:'center' }}>
-                <input type="number" placeholder="0.00" value={price} onChange={e=>setPrice(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:14, outline:'none', minWidth:0, textAlign:'right', fontFamily: 'var(--font-mono)' }} />
+                <input type="number" placeholder="0.00" value={price} onChange={e=>setPrice(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:16, outline:'none', minWidth:0, textAlign:'right', fontFamily: 'var(--font-mono)' }} />
                 <span style={{ fontSize:12, color:'#8e8e93', marginLeft: 8 }}>USD</span>
               </div>
             </div>
@@ -481,7 +517,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
           {orderType === 'stop market' && (
             <div style={{ display:'flex', alignItems:'center', background:'var(--color-bg0)', border:'1px solid var(--color-border)', borderRadius:8, padding:'6px 10px', transition:'border 0.2s' }}>
               <span style={{ fontSize:13, color:'#8e8e93', marginRight:8, whiteSpace:'nowrap' }}>Trigger Price</span>
-              <input type="number" placeholder="0.00" value={triggerPrice} onChange={e=>setTriggerPrice(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:14, outline:'none', minWidth:0, textAlign:'right', fontFamily: 'var(--font-mono)' }} />
+              <input type="number" placeholder="0.00" value={triggerPrice} onChange={e=>setTriggerPrice(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:16, outline:'none', minWidth:0, textAlign:'right', fontFamily: 'var(--font-mono)' }} />
               <span style={{ fontSize:12, color:'#8e8e93', marginLeft: 8 }}>USD</span>
             </div>
           )}
@@ -490,11 +526,11 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display:'flex', alignItems:'center', background:'var(--color-bg0)', border:'1px solid var(--color-border)', borderRadius:8, padding:'6px 10px', transition:'border 0.2s' }}>
                 <span style={{ fontSize:13, color:'#8e8e93', marginRight:8, whiteSpace:'nowrap' }}>Hours</span>
-                <input type="number" placeholder="0" min="0" value={durationHours} onChange={e=>setDurationHours(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:14, outline:'none', minWidth:0, textAlign:'right', fontFamily: 'var(--font-mono)' }} />
+                <input type="number" placeholder="0" min="0" value={durationHours} onChange={e=>setDurationHours(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:16, outline:'none', minWidth:0, textAlign:'right', fontFamily: 'var(--font-mono)' }} />
               </div>
               <div style={{ display:'flex', alignItems:'center', background:'var(--color-bg0)', border:'1px solid var(--color-border)', borderRadius:8, padding:'6px 10px', transition:'border 0.2s' }}>
                 <span style={{ fontSize:13, color:'#8e8e93', marginRight:8, whiteSpace:'nowrap' }}>Minutes</span>
-                <input type="number" placeholder="0" min="0" max="59" value={durationMins} onChange={e=>setDurationMins(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:14, outline:'none', minWidth:0, textAlign:'right', fontFamily: 'var(--font-mono)' }} />
+                <input type="number" placeholder="0" min="0" max="59" value={durationMins} onChange={e=>setDurationMins(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:16, outline:'none', minWidth:0, textAlign:'right', fontFamily: 'var(--font-mono)' }} />
               </div>
             </div>
           )}
@@ -505,7 +541,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
       <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
         <div style={{ display:'flex', alignItems:'center', background:'var(--color-bg0)', border:(size !== '' && !sizeNum)?'1px solid var(--color-red)':'1px solid var(--color-border)', borderRadius:8, padding:'6px 10px', transition:'border 0.2s' }}>
           <span style={{ fontSize:13, color:'#8e8e93', marginRight:8, whiteSpace:'nowrap' }}>Order Size</span>
-          <input type="number" placeholder="0" value={size} onChange={e=>handleSizeChange(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:14, outline:'none', minWidth:0 }} />
+          <input type="number" placeholder="0" value={size} onChange={e=>handleSizeChange(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:16, outline:'none', minWidth:0 }} />
           <div style={{ display:'flex', background:'var(--color-bg2)', borderRadius:4, padding:2, marginLeft:8 }}>
             <span 
               onClick={() => toggleCurrency('BASE')}
@@ -553,7 +589,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
                 </div>
               </div>
               <div style={{ display:'flex', alignItems:'center' }}>
-                <input type="number" placeholder="0.00" value={takeProfit} onChange={e=>setTakeProfit(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:14, outline:'none', minWidth:0, fontFamily: 'var(--font-mono)' }} />
+                <input type="number" placeholder="0.00" value={takeProfit} onChange={e=>setTakeProfit(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:16, outline:'none', minWidth:0, fontFamily: 'var(--font-mono)' }} />
                 <span style={{ fontSize:11, color:'#8e8e93' }}>USD</span>
               </div>
             </div>
@@ -567,7 +603,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
                 </div>
               </div>
               <div style={{ display:'flex', alignItems:'center' }}>
-                <input type="number" placeholder="0.00" value={stopLoss} onChange={e=>setStopLoss(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:14, outline:'none', minWidth:0, fontFamily: 'var(--font-mono)' }} />
+                <input type="number" placeholder="0.00" value={stopLoss} onChange={e=>setStopLoss(e.target.value)} style={{ flex:1, background:'transparent', border:'none', color:'#fff', fontSize:16, outline:'none', minWidth:0, fontFamily: 'var(--font-mono)' }} />
                 <span style={{ fontSize:11, color:'#8e8e93' }}>USD</span>
               </div>
             </div>
@@ -622,11 +658,14 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
         <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#8e8e93' }}>Position Size</span><span style={{ color:'#fbbf24' }}>{baseSize ? baseSize.toFixed(4) : '0.00'} {activeMarket.baseAsset} / ${orderSummary?.notional || '0.00'}</span></div>
         <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#8e8e93' }}>Est. Liq. Price</span><span style={{ borderBottom:'1px dashed var(--color-border)' }}>{orderSummary?.liqPrice ? `$${orderSummary.liqPrice}` : 'N/A'}</span></div>
         <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#8e8e93' }}>Margin Required</span><span>${orderSummary?.collateral || '0.00'}</span></div>
-        <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#8e8e93' }}>Est. Fee ({orderType === 'limit' ? '0.02%' : '0.04%'})</span><span style={{ borderBottom:'1px dashed var(--color-border)' }}>${orderSummary?.fees || '0.00'}</span></div>
+        <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#8e8e93' }}>Est. Fee ({orderType === 'limit' ? '0.03%' : '0.05%'})</span><span style={{ borderBottom:'1px dashed var(--color-border)' }}>${orderSummary?.fees || '0.00'}</span></div>
+        {Number(orderSummary?.feeDiscount) > 0 && (
+          <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#26c68b' }}>Fee Discount (25%)</span><span style={{ borderBottom:'1px dashed var(--color-border)', color:'#26c68b' }}>-${orderSummary?.feeDiscount}</span></div>
+        )}
         <div style={{ display:'flex', justifyContent:'space-between' }}>
-          <span style={{ color:'#8e8e93' }}>Price Impact</span>
-          <span style={{ borderBottom:'1px dashed var(--color-border)', color: priceImpactPct > 0 ? '#e55f48' : priceImpactPct < 0 ? '#26c68b' : '#fff' }}>
-            {priceImpactPct > 0 ? '-' : priceImpactPct < 0 ? '+' : ''}${Math.abs(priceImpactVal).toFixed(2)} ({priceImpactPct > 0 ? '-' : priceImpactPct < 0 ? '+' : ''}{Math.abs(priceImpactPct).toFixed(4)}%)
+          <span style={{ color:'#8e8e93' }}>Price Impact (Penalty)</span>
+          <span style={{ borderBottom:'1px dashed var(--color-border)', color: priceImpactPct > 0 ? '#e55f48' : '#fff' }}>
+            {priceImpactPct > 0 ? '-' : ''}${Math.abs(priceImpactVal).toFixed(2)} ({priceImpactPct > 0 ? '-' : ''}{Math.abs(priceImpactPct).toFixed(4)}%)
           </span>
         </div>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -692,7 +731,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
                 min="1" max={maxLeverage}
                 value={tempLeverage}
                 onChange={(e) => setTempLeverage(e.target.value)}
-                style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '15px', outline: 'none', width: '32px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}
+                style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '16px', outline: 'none', width: '32px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}
               />
               <span style={{ color: '#8e8e93', fontSize: '15px', fontWeight: 500, marginLeft: '2px' }}>x</span>
             </div>
