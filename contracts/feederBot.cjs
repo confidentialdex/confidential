@@ -185,7 +185,7 @@ async function main() {
   } catch { }
 
   // Load Trading address
-  let TRADING_ADDRESS = "0x266C76800b5bdEd90c246AC60319831078fA28A4";
+  let TRADING_ADDRESS = "0x26c357F2d84842d67F584E6b532bC0d94dC29fEd";
   try {
     const dpProxies1 = path.join(__dirname, "latest_deploy_proxies.json");
     const dpProxies2 = path.join(__dirname, "scripts/latest_deploy_proxies.json");
