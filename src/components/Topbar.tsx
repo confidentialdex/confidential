@@ -270,7 +270,7 @@ export default function Topbar() {
                             setDropdownOpen(false)
                           }}
                         >
-                          Export Wallet
+                          Export
                         </button>
                       )}
                       <button
@@ -387,7 +387,7 @@ export default function Topbar() {
                           style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--color-text1)' }}
                           onClick={() => { exportWallet(); setIsMobileMenuOpen(false); }}
                         >
-                          Export Wallet
+                          Export
                         </button>
                       )}
                       <button
