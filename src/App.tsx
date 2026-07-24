@@ -23,6 +23,13 @@ export default function App() {
   const location = useLocation()
   const isHome = location.pathname === '/'
 
+  const DummyPage = ({ title }: { title: string }) => (
+    <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--color-text3)' }}>
+      <h2>{title}</h2>
+      <p>Coming soon...</p>
+    </div>
+  )
+
 
   return (
     <>
@@ -61,6 +68,9 @@ export default function App() {
           <Route path="/trade" element={<Trade />} />
           <Route path="/vaults" element={<Vault />} />
           <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/referrals" element={<DummyPage title="Referrals" />} />
+          <Route path="/points" element={<DummyPage title="Points" />} />
+          <Route path="/leaderboard" element={<DummyPage title="Leaderboard" />} />
 
           {/* Catch-all: redirect any unknown route to Home */}
           <Route path="*" element={<Navigate to="/" replace />} />

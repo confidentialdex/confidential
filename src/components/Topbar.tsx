@@ -43,6 +43,9 @@ export default function Topbar() {
     { to: '/trade', label: t('nav.trade') },
     { to: '/portfolio', label: t('nav.portfolio') },
     { to: '/vaults', label: 'Vaults' },
+    { to: '/referrals', label: t('nav.referrals') },
+    { to: '/points', label: t('nav.points') },
+    { to: '/leaderboard', label: t('nav.leaderboard') },
   ]
 
   const { ready, login } = usePrivy()
