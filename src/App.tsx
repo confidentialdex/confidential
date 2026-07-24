@@ -23,12 +23,6 @@ export default function App() {
   const location = useLocation()
   const isHome = location.pathname === '/'
 
-  const DummyPage = ({ title }: { title: string }) => (
-    <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--color-text3)' }}>
-      <h2>{title}</h2>
-      <p>Coming soon...</p>
-    </div>
-  )
 
   return (
     <>
