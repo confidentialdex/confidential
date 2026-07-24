@@ -261,9 +261,13 @@ async function main() {
 
   let TRADING_ADDRESS = "0x266C76800b5bdEd90c246AC60319831078fA28A4";
   try {
+    const dpProxies1 = path.join(__dirname, "latest_deploy_proxies.json");
+    const dpProxies2 = path.join(__dirname, "scripts/latest_deploy_proxies.json");
     const dp1 = path.join(__dirname, "latest_deploy.json");
     const dp2 = path.join(__dirname, "scripts/latest_deploy.json");
-    const dp = fs.existsSync(dp1) ? dp1 : dp2;
+    const dp = fs.existsSync(dpProxies1) ? dpProxies1 : 
+               fs.existsSync(dpProxies2) ? dpProxies2 : 
+               fs.existsSync(dp1) ? dp1 : dp2;
     if (fs.existsSync(dp)) {
       TRADING_ADDRESS = JSON.parse(fs.readFileSync(dp, "utf8")).tradingAddress;
     }
