@@ -1,36 +1,80 @@
-# 📜 Smart Contracts
+# 📜 Smart Contracts Architecture & Modules
 
-To ensure transparency and facilitate public audits by developers, we have outlined the contract layers that form the **Confidential DEX V1** network.
-
----
-
-## Cryptographic Security Layers (Anti-Exploit)
-
-Our Smart Contracts are not written arbitrarily. Every line is battle-tested against various types of threats:
-
-- **Strict CEI (Checks-Effects-Interactions):** All token transfers (USDC) are executed purely at the end of the function block after internal ledgers have been updated. This classic design pattern closes all vulnerabilities to the *Reentrancy Attacks* rampant in DeFi.
-- **Anti-Donation Attack (ERC-4626 standard):** In accordance with the standard, the first deposit coin in the Vault (worth 1000 wei) is quietly burned. This chokes exploits where hackers attempt to artificially inflate the unit price (*shares*) through massive donations prior to a hack.
-- **2-Step Ownership Transfer:** The administration system does not recognize unilateral transfers. When replacing the protocol Admin/Owner, a *transferOwnership* call must always be followed by an *acceptOwnership* interaction from the receiving party. The system will never be paralyzed due to a "typo" in the wallet address (Fat-Finger Error).
-- **Automated Epoch Bankruptcy:** LPs do not inherit the "debt" of a price collapse. If a Vault is depleted to a $0 balance due to consecutive trader winnings, the shares will not sink into negative value. The system will purely reset the price to a `1:1` ratio in a fresh *Epoch* cycle.
+To ensure maximum transparency and facilitate public audits, this document details the modular smart contract layers that power the **Confidential DEX V1** protocol on the Arc Network.
 
 ---
 
-## 🔗 Contract Addresses (Arc Testnet)
+## 🏗️ Upgradeable Proxy Architecture (`DEXProxy`)
 
-Below are the primary smart contract addresses deployed on the Arc Testnet.
+To enable continuous iteration, bug fixes, and feature upgrades without ever compromising existing liquidity or state, **Confidential DEX** adopts the robust **OpenZeppelin Transparent Upgradeable Proxy Pattern**.
+
+- **`DEXProxy.sol`:** Acts as the persistent proxy layer. User transactions and external calls (like order placement, collateral deposits, and keeper executions) interact exclusively with Proxy addresses. State variables, token balances, and liquidity remain locked within the Proxy contract storage.
+- **`DEXProxyAdmin`:** A centralized governance and admin regulator that isolates upgrade privileges from regular operations. Only authorized admins can point the Proxy to a newly deployed Logic contract.
+
+This separation guarantees that even when upgraded to new contract versions (e.g., adding new order types or enhancing margin calculations), **user positions, vault shares, and contract addresses never change**.
+
+---
+
+## 🧩 Core Protocol Modules
+
+Our protocol architecture is partitioned into modular, specialized smart contracts that securely interact with each other:
+
+### 1. Confidential Core V1 (`ConfidentialCoreV1.sol`)
+*The Central Risk Engine & Parameter Store.*
+- **Open Interest (OI) & Risk Caps:** Manages dynamic long/short Open Interest limits per trading pair (in 6-decimal USDC) to prevent single-market exposure risks. Enforces utilization caps (`utilizationCapBps`) to protect vault liquidity.
+- **Dynamic Funding Rate System:** Implement continuous peer-to-peer funding rates where the majority side (e.g., Longs) pays the minority side (e.g., Shorts) based on OI skew ratio (`(longOI - shortOI) / (longOI + shortOI)`), stabilizing balance naturally.
+- **Fee Routing & Maker/Taker Split:** Calculates dynamic trade impact penalties, maker discounts, and distributes fees precisely between Vault LPs (`vaultFeeBps`) and protocol Treasury (`treasuryFeeBps`).
+- **Emergency Controls:** Equipped with timelocks and circuit breakers (`paused` state) to halt operations during systemic network anomalies.
+
+### 2. Confidential Trading V1 (`ConfidentialTradingV1.sol`)
+*The Execution Gateway & Order Matching Engine.*
+- **Comprehensive Order Types:** Native on-chain support for **Market Open/Close, Limit Orders, Stop Orders, and TWAP (Time-Weighted Average Price)** slicing.
+- **Position Management:** Tracks leverage up to **50x**, calculates liquidation thresholds, manages collateral adjustments, and calculates live PnL adjusted for borrowing and funding indexes.
+- **Automated Keepers & Multicall Compatibility:** Optimized for batch processing via Multicall3, allowing automated Feeder/Keeper bots to verify triggers, execute orders, and perform liquidations with sub-second finality.
+- **TP/SL Execution:** Direct on-chain Take-Profit (TP) and Stop-Loss (SL) execution logic without relying on centralized off-chain order books.
+
+### 3. Confidential Vault V1 (`ConfidentialVaultV1.sol`)
+*Dual-Tranche Proportional Liquidity Reserve.*
+- **Counterparty Reserves:** Acts as the global counterparty to all trader positions. Trader losses become LP profits, and trader winnings are settled from the vault pool.
+- **ERC-4626 Compliance:** Standardized tokenized vault system where Liquidity Providers receive `shares` reflecting real-time net asset value (NAV).
+- **Dual-Tranche Security:** Built-in shared-loss structure separating standard and priority tranches, equipped with a **60% Floor Protection** mechanism to guard capital against flash drawdown events.
+
+### 4. Pyth Price Oracle Adapter (`PythPriceOracle.sol`)
+*High-Resolution On-Chain Price Validation.*
+- **Decentralized Feeds:** Wraps the native Pyth Network contract, mapping pair IDs (e.g., `keccak256("BTC/USDC")`) directly to Pyth cryptographic price feed IDs.
+- **Staleness & Confidence Enforcement:** Rejects price updates older than the configured `maxStaleness` threshold and validates high-confidence bands to entirely immunize trading execution against manipulation and oracle flash-loan attacks.
+
+---
+
+## 🔐 Cryptographic Security Layers (Anti-Exploit)
+
+Our contracts are engineered from the ground up to defend against modern DeFi attack vectors:
+
+- **Strict CEI (Checks-Effects-Interactions):** All asset transfers (USDC) are executed strictly at the very end of function blocks after internal ledgers, Open Interest, and funding indexes have settled. This pattern shuts down any vulnerability to *Reentrancy Attacks* (`ReentrancyGuard.sol`).
+- **Anti-Donation / Inflation Attack Protection:** Compliant with modern ERC-4626 security standards, initial vault share tokens (worth 1000 wei) are permanently burned upon vault initialization. This completely eliminates mathematical exploits where attackers attempt to artificially inflate share prices via massive unminted donations.
+- **2-Step Ownership Transfer:** Protocol ownership transfers enforce a mandatory two-step hand-shake (`transferOwnership` followed by `acceptOwnership`). This guarantees the protocol can never be orphaned due to accidental typographical errors (fat-finger addresses).
+- **Automated Epoch Bankruptcy:** Liquidity Providers do not inherit toxic debt from market collapses. If a Vault is completely depleted due to extreme cascading trader winnings, share values are prevented from entering negative territory; instead, the pool cleanly resets to a `1:1` initial price ratio under a fresh *Epoch* cycle.
+
+---
+
+## 🔗 Live Contract Addresses (Arc Testnet)
+
+Below are the primary upgraded smart contract addresses currently active on the Arc Testnet (`Chain ID: 5042002`).
 
 ::: tip Integration Note
-Use these addresses if you wish to build an *analytics dashboard*, quantitative bots, or extensions on top of our protocol.
+Use these addresses if you wish to build analytics dashboards, quant strategies, keeper network bots, or decentralized extensions on top of Confidential DEX.
 :::
 
-| Contract Module | Address | Details / Description |
+| Contract Module | Proxy Address | Description |
 | :--- | :--- | :--- |
-| **Confidential Core V1 (Proxy)** | *`0xBe7b5a030b9e30BD4F6a2Cdf3De2ab14d4E49767`* | The brain of the protocol. Manages Open Interest, Limits, and global DEX parameters. |
-| **Confidential Trading V1 (Proxy)** | *`0x26c357F2d84842d67F584E6b532bC0d94dC29fEd`* | The execution gateway. Where orders are created, Pyth is validated, and leverage is calculated. |
-| **Confidential Vault V1 (Proxy)** | *`0xE9723B722Db4516F1e807ef25e15b61170459dA5`* | Dual-Tranche proportional shared-loss reserve (Degen & Prime) with 60% floor protection. |
-| **USDC Token (Arc)** | *`0x3600000000000000000000000000000000000000`* | The base stablecoin (Decimals: 6) on the Arc network for margin and liquidity. |
-| **Pyth Price Oracle (Proxy)** | *`0x85ce6Ed04e2bCfdde5B1994d443836AeAdCa3176`* | High-resolution on-chain decentralized oracle validation. |
+| **Confidential Core V1** | `0xBe7b5a030b9e30BD4F6a2Cdf3De2ab14d4E49767` | Protocol brain: Open Interest limits, utilization caps, fees, and funding rate engine. |
+| **Confidential Trading V1** | `0x26c357F2d84842d67F584E6b532bC0d94dC29fEd` | Primary gateway for margin trading, order triggers, TWAP execution, and liquidations. |
+| **Confidential Vault V1** | `0xE9723B722Db4516F1e807ef25e15b61170459dA5` | Dual-tranche shared-loss LP pool with ERC-4626 compliant yield & capital floor. |
+| **Pyth Price Oracle** | `0x85ce6Ed04e2bCfdde5B1994d443836AeAdCa3176` | Oracle adapter enforcing maximum price staleness and cryptographic validation. |
+| **DEX Proxy Admin** | `0x14C52C9Dc2fBFc58429744AE3631Ea6460C16349` | Governance admin contract responsible for safe logic proxy migrations. |
+| **USDC Token (Arc)** | `0x3600000000000000000000000000000000000000` | Native 6-decimal base currency for all collateral deposits and LP stakes. |
 
 ---
 
-> Contact our team at the official repository [confidentialdex/confidential](https://github.com/confidentialdex/confidential) if you detect a potential bug or wish to perform a deep integration!
+> Found a bug or interested in deep algorithmic integration? Connect with our development team directly via the official repository at [confidentialdex/confidential](https://github.com/confidentialdex/confidential)!
+
