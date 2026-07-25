@@ -613,7 +613,7 @@ async function main() {
             // Simulate tx (use a read RPC to avoid burning write quota)
             try {
               const simTrading = new ethers.Contract(TRADING_ADDRESS, tradingAbi, simProv);
-              await simTrading.executeOrder.staticCall(order.orderId, updateData, { value: pythFee });
+              await simTrading.executeOrder.staticCall(order.orderId, updateData, { value: pythFee, from: wallet.address });
               pool.markSuccess(simUrl);
             } catch (simErr) {
               const reason = extractRevertReason(simErr);
@@ -723,7 +723,7 @@ async function main() {
               const liqPythFee = await getPythFee(liqSimProv, updateData);
               try {
                 const liqSimTrading = new ethers.Contract(TRADING_ADDRESS, tradingAbi, liqSimProv);
-                await liqSimTrading.liquidate.staticCall(posId, updateData, { value: liqPythFee });
+                await liqSimTrading.liquidate.staticCall(posId, updateData, { value: liqPythFee, from: wallet.address });
                 await sleep(1500);
                 const gp = await getCachedGasPrice(pool);
                 const nonce = await getNextNonce(wallet, provider);
@@ -749,7 +749,7 @@ async function main() {
                   const { provider: tpslSimProv } = pool.getReadProvider();
                   const tpslPythFee = await getPythFee(tpslSimProv, updateData);
                   const tpslSimTrading = new ethers.Contract(TRADING_ADDRESS, tradingAbi, tpslSimProv);
-                  await tpslSimTrading.executeTPSL.staticCall(posId, updateData, { value: tpslPythFee });
+                  await tpslSimTrading.executeTPSL.staticCall(posId, updateData, { value: tpslPythFee, from: wallet.address });
                   await sleep(1500);
                   const gp = await getCachedGasPrice(pool);
                   const nonce = await getNextNonce(wallet, provider);
