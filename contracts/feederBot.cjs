@@ -320,7 +320,7 @@ async function main() {
     console.log("ℹ️  Multicall3 not found, using JSON-RPC batch fallback");
   }
 
-  const PYTH_FEE = ethers.parseUnits("0.01", 18);
+  const PYTH_FEE = 0n; // 0 fee on Arc Testnet Pyth contract (prevents 'Zero address not allowed')
 
   // ──────────── State ────────────
   let lastKnownNextOrderId = 1;

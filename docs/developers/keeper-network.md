@@ -49,9 +49,10 @@ To eliminate RPC network congestion and latency:
 - **Multicall3 Aggregation (`0xcA11bde0...`):** Queries up to **50 pending orders or positions in a single `aggregate3` call**, cutting RPC read overhead by 98%.
 - **Batched JSON-RPC Fallback:** If `Multicall3` is unavailable on a local or custom chain, V1 automatically downgrades to parallel HTTP `eth_call` batches (`jsonrpc: "2.0"`).
 
-### 3. Smart Arc Network Rate-Limit & Cooldown Protection
+### 3. Smart Arc Network Rate-Limit & Multi-RPC Failover
 High-frequency bots often get throttled (`HTTP 429` / `Too Many Requests`). V1 integrates:
-- **Adaptive Bucket Cool-downs:** Automatically pauses (`isRpcRateLimitError`) for 4s–6s when Arc Network RPC rate limits trigger, allowing tokens/buckets to replenish.
+- **Multi-RPC Failover Pool (`RpcPool`):** Supports multiple fallback RPC endpoints (e.g., Arc DRPC, QuickNode, Blockdaemon). If the primary RPC fails or rate-limits, the bot seamlessly routes calls to the next healthy node without missing a beat.
+- **Adaptive Bucket Cool-downs:** Automatically pauses (`isRpcRateLimitError`) for 4s–6s when all Arc Network RPCs hit rate limits, allowing tokens/buckets to replenish.
 - **Pre-Execution Simulation (`staticCall`):** Simulates every transaction before broadcasting. If an order reverts (`Limit not reached`, `TWAP: too early`), the bot skips gas expenditure.
 
 ### 4. Gas & Nonce Caching
@@ -74,7 +75,7 @@ We recommend deploying the bot on a dedicated Linux VPS with high connection sta
 Create a file named `feederBot.cjs` inside your server directory (`contracts/`) and copy the complete production script below:
 
 <details>
-<summary>Click here to view and copy the full <b>feederBot.cjs V1</b> script (645 lines)</summary>
+<summary>Click here to view and copy the full <b>feederBot.cjs V1</b> script (796 lines)</summary>
 
 ```javascript
 const { ethers } = require("ethers");
@@ -126,7 +127,7 @@ const ORDER_TYPE_NAMES = {
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // ──────────── Multi-RPC Pool (GMX/Avantis-style) ────────────
-// Official Arc Testnet RPC endpoints: https://docs.arc.io/arc/references/rpc-endpoints
+// All official Arc Testnet RPC endpoints from https://docs.arc.io/arc/references/rpc-endpoints
 const DEFAULT_RPC_URLS = [
   'https://rpc.testnet.arc.io',
   'https://rpc.drpc.testnet.arc.io',
@@ -139,45 +140,74 @@ class RpcPool {
     this.urls = urls;
     this.chainId = chainId;
     this.providers = urls.map(url => new ethers.JsonRpcProvider(url, chainId, { staticNetwork: true }));
-    this.readIndex = 0;
-    this.failCounts = new Map();
-    this.cooldownUntil = new Map();
+    this.readIndex = 0;            // round-robin index for reads
+    this.failCounts = new Map();   // url -> consecutive fail count
+    this.cooldownUntil = new Map(); // url -> timestamp when cooldown expires
     console.log(`🌐 RPC Pool: ${urls.length} endpoints loaded`);
+    urls.forEach((u, i) => console.log(`   [${i}] ${u}`));
   }
+
+  // Get the next healthy read provider (round-robin, skip cooled-down ones)
   getReadProvider() {
     const now = Date.now();
     for (let attempt = 0; attempt < this.urls.length; attempt++) {
       const idx = this.readIndex % this.urls.length;
       this.readIndex++;
       const url = this.urls[idx];
-      if (now < (this.cooldownUntil.get(url) || 0)) continue;
+      const cd = this.cooldownUntil.get(url) || 0;
+      if (now < cd) continue; // still in cooldown
       return { provider: this.providers[idx], url, index: idx };
     }
-    return { provider: this.providers[0], url: this.urls[0], index: 0 };
+    // All in cooldown — return the one that expires soonest
+    let earliest = Infinity, bestIdx = 0;
+    for (let i = 0; i < this.urls.length; i++) {
+      const cd = this.cooldownUntil.get(this.urls[i]) || 0;
+      if (cd < earliest) { earliest = cd; bestIdx = i; }
+    }
+    return { provider: this.providers[bestIdx], url: this.urls[bestIdx], index: bestIdx };
   }
+
+  // Get the primary write provider (first URL), with fallback
   getWriteProvider() {
     const now = Date.now();
     for (let i = 0; i < this.urls.length; i++) {
-      if (now < (this.cooldownUntil.get(this.urls[i]) || 0)) continue;
+      const cd = this.cooldownUntil.get(this.urls[i]) || 0;
+      if (now < cd) continue;
       return { provider: this.providers[i], url: this.urls[i], index: i };
     }
     return { provider: this.providers[0], url: this.urls[0], index: 0 };
   }
+
+  // Mark an RPC as having failed (cooldown 10s after 3 consecutive failures)
   markFail(url) {
     const count = (this.failCounts.get(url) || 0) + 1;
     this.failCounts.set(url, count);
-    if (count >= 3) this.cooldownUntil.set(url, Date.now() + 10_000);
+    if (count >= 3) {
+      this.cooldownUntil.set(url, Date.now() + 10_000); // 10s cooldown
+      console.log(`⚠️  RPC ${url.split('.')[1] || url} cooled down for 10s (${count} consecutive failures)`);
+    }
   }
-  markSuccess(url) { this.failCounts.set(url, 0); }
+
+  // Mark an RPC as healthy (reset fail count)
+  markSuccess(url) {
+    this.failCounts.set(url, 0);
+  }
+
+  // Get URL for a provider index (used for batch JSON-RPC)
+  getUrl(index) {
+    return this.urls[index];
+  }
 }
 
 // ──────────── Multicall3 ────────────
+// Canonical address deployed on virtually every EVM chain
 const MULTICALL3_ADDR = "0xcA11bde05977b3631167028862bE2a173976CA11";
 const MULTICALL3_ABI = [
   "function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) payable returns (tuple(bool success, bytes returnData)[])"
 ];
 
 // ──────────── Batch RPC via JSON-RPC ────────────
+// Fallback if Multicall3 is not available
 async function batchJsonRpc(rpcUrl, calls) {
   const batch = calls.map((c, i) => ({
     jsonrpc: "2.0",
@@ -198,10 +228,12 @@ async function batchJsonRpc(rpcUrl, calls) {
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const results = await res.json();
+    // Sort by id since responses may arrive out of order
     if (Array.isArray(results)) {
       results.sort((a, b) => a.id - b.id);
       return results.map(r => r.result || null);
     }
+    // Single response (some RPCs don't support batch)
     return [results.result || null];
   } catch (e) {
     clearTimeout(timeout);
@@ -259,14 +291,16 @@ async function waitReceipt(provider, txHash, maxRetries = 15) {
 
 let cachedGasPrice = 25_000_000_000n; // default 25 gwei
 let lastGasPriceFetch = 0;
-async function getCachedGasPrice(provider) {
+async function getCachedGasPrice(pool) {
   const now = Date.now();
-  if (now - lastGasPriceFetch > 60_000) {
+  if (now - lastGasPriceFetch > 60_000) { // refresh at most once per minute
     try {
+      const { provider, url } = pool.getReadProvider();
       const fd = await provider.getFeeData();
       if (fd && fd.gasPrice) {
         cachedGasPrice = fd.gasPrice;
         lastGasPriceFetch = now;
+        pool.markSuccess(url);
       }
     } catch {}
   }
@@ -297,7 +331,7 @@ async function main() {
     ? envRpc.split(',').map(u => u.trim()).filter(Boolean)
     : DEFAULT_RPC_URLS;
   const pool = new RpcPool(rpcUrls);
-  const provider = pool.providers[0]; // primary for wallet binding
+  const provider = pool.providers[0]; // primary provider for wallet binding
   const pk = process.env.BOT_KEEPER_PRIVATE_KEY || process.env.PRIVATE_KEY;
 
   if (!pk) { console.error("❌ No private key found!"); process.exit(1); }
@@ -310,6 +344,7 @@ async function main() {
     console.log(`💰 Balance: ${ethers.formatEther(bal)} ARC`);
   } catch { }
 
+  // Load Trading address
   let TRADING_ADDRESS = "0x26c357F2d84842d67F584E6b532bC0d94dC29fEd";
   try {
     const dpProxies1 = path.join(__dirname, "latest_deploy_proxies.json");
@@ -325,6 +360,7 @@ async function main() {
   } catch { }
   console.log(`📈 Trading: ${TRADING_ADDRESS}`);
 
+  // Load ABI
   let tradingAbi = [
     "function nextOrderId() view returns (uint256)",
     "function pendingOrders(uint256) view returns (bytes32 pairId, address trader, bool isLong, uint256 sizeUsd, uint256 collateral, uint256 leverage, uint256 triggerPrice, uint8 orderType, bool isActive, uint256 createdAt, uint256 positionId, uint256 feePaid, uint256 executionFee, uint256 tpPrice, uint256 slPrice, uint256 twapSlices, uint256 twapInterval, uint256 twapExecuted, uint256 twapLastExec)",
@@ -348,12 +384,13 @@ async function main() {
   const tradingContract = new ethers.Contract(TRADING_ADDRESS, tradingAbi, wallet);
   const tradingIface = tradingContract.interface;
 
+  // Check if Multicall3 is available
   let useMulticall = false;
   let multicall;
   try {
-    const mc3Code = await provider.getCode(MULTICALL3_ADDR);
+    const { provider: readProv } = pool.getReadProvider();
+    const mc3Code = await readProv.getCode(MULTICALL3_ADDR);
     if (mc3Code && mc3Code !== '0x' && mc3Code.length > 10) {
-      multicall = new ethers.Contract(MULTICALL3_ADDR, MULTICALL3_ABI, provider);
       useMulticall = true;
       console.log("✅ Multicall3 available — batch reads enabled");
     }
@@ -363,17 +400,19 @@ async function main() {
     console.log("ℹ️  Multicall3 not found, using JSON-RPC batch fallback");
   }
 
-  const PYTH_FEE = ethers.parseUnits("0.01", 18);
+  const PYTH_FEE = 0n; // 0 fee on Arc Testnet Pyth contract (prevents 'Zero address not allowed')
 
   // ──────────── State ────────────
   let lastKnownNextOrderId = 1;
   let lastKnownNextPosId = 1;
-  let confirmedDone = new Set();
-  let confirmedClosed = new Set();
-  let failedOrders = new Map();
+  let confirmedDone = new Set();     // Order IDs confirmed inactive
+  let confirmedClosed = new Set();   // Position IDs confirmed closed
+  let failedOrders = new Map();      // orderId -> failCount
   let loopCount = 0;
   let isRunning = false;
 
+  // ──────────── Batch Read Orders via Multicall3 or JSON-RPC batch ────────────
+  // Returns: Map<orderId, { pairId, orderType, isActive, ... }>
   async function batchReadOrders(orderIds) {
     if (orderIds.length === 0) return new Map();
 
@@ -381,39 +420,57 @@ async function main() {
     let results;
 
     if (useMulticall) {
+      // Multicall3: 1 single RPC call for all order reads
       const calls = fnData.map(data => ({
         target: TRADING_ADDRESS,
         allowFailure: true,
         callData: data
       }));
-      try {
-        const mcResults = await multicall.aggregate3.staticCall(calls);
-        results = mcResults.map(r => r.success ? r.returnData : null);
-      } catch (e) {
-        const msg = e.message || '';
-        if (isRpcRateLimitError(msg)) {
-          console.log("[Multicall] Rate limited on orders, cooldown 6s...");
-          await sleep(6000);
-        } else {
-          console.error("[Multicall] Error:", msg.slice(0, 80));
+      // Try up to 3 RPCs for read
+      let success = false;
+      for (let attempt = 0; attempt < Math.min(3, pool.urls.length); attempt++) {
+        const { provider: readProv, url: rpcUrl } = pool.getReadProvider();
+        try {
+          const mc = new ethers.Contract(MULTICALL3_ADDR, MULTICALL3_ABI, readProv);
+          const mcResults = await mc.aggregate3.staticCall(calls);
+          results = mcResults.map(r => r.success ? r.returnData : null);
+          pool.markSuccess(rpcUrl);
+          success = true;
+          break;
+        } catch (e) {
+          pool.markFail(rpcUrl);
+          const msg = e.message || '';
+          if (isRpcRateLimitError(msg)) {
+            continue; // try next RPC
+          } else {
+            console.error("[Multicall] Error:", msg.slice(0, 80));
+          }
         }
-        return new Map();
       }
+      if (!success) return new Map();
     } else {
+      // JSON-RPC batch fallback: 1 HTTP request for all
       const calls = fnData.map(data => ({ to: TRADING_ADDRESS, data }));
-      try {
-        results = await batchJsonRpc(rpcUrl, calls);
-        await sleep(300);
-      } catch (e) {
-        const msg = e.message || '';
-        if (isRpcRateLimitError(msg)) {
-          console.log("[Batch RPC] Rate limited on orders, cooldown 6s...");
-          await sleep(6000);
-        } else {
-          console.error("[Batch RPC] Error:", msg.slice(0, 80));
+      let success = false;
+      for (let attempt = 0; attempt < Math.min(3, pool.urls.length); attempt++) {
+        const { url: rpcUrl } = pool.getReadProvider();
+        try {
+          results = await batchJsonRpc(rpcUrl, calls);
+          pool.markSuccess(rpcUrl);
+          success = true;
+          await sleep(300);
+          break;
+        } catch (e) {
+          pool.markFail(rpcUrl);
+          const msg = e.message || '';
+          if (isRpcRateLimitError(msg)) {
+            continue; // try next RPC
+          } else {
+            console.error("[Batch RPC] Error:", msg.slice(0, 80));
+          }
         }
-        return new Map();
       }
+      if (!success) return new Map();
     }
 
     const parsed = new Map();
@@ -439,6 +496,7 @@ async function main() {
     return parsed;
   }
 
+  // ──────────── Batch Read Positions via Multicall3 or JSON-RPC batch ────────────
   async function batchReadPositions(posIds) {
     if (posIds.length === 0) return new Map();
 
@@ -451,34 +509,49 @@ async function main() {
         allowFailure: true,
         callData: data
       }));
-      try {
-        const mcResults = await multicall.aggregate3.staticCall(calls);
-        results = mcResults.map(r => r.success ? r.returnData : null);
-      } catch (e) {
-        const msg = e.message || '';
-        if (isRpcRateLimitError(msg)) {
-          console.log("[Multicall Positions] Rate limited, cooldown 6s...");
-          await sleep(6000);
-        } else {
-          console.error("[Multicall] Error:", msg.slice(0, 80));
+      let success = false;
+      for (let attempt = 0; attempt < Math.min(3, pool.urls.length); attempt++) {
+        const { provider: readProv, url: rpcUrl } = pool.getReadProvider();
+        try {
+          const mc = new ethers.Contract(MULTICALL3_ADDR, MULTICALL3_ABI, readProv);
+          const mcResults = await mc.aggregate3.staticCall(calls);
+          results = mcResults.map(r => r.success ? r.returnData : null);
+          pool.markSuccess(rpcUrl);
+          success = true;
+          break;
+        } catch (e) {
+          pool.markFail(rpcUrl);
+          const msg = e.message || '';
+          if (isRpcRateLimitError(msg)) {
+            continue;
+          } else {
+            console.error("[Multicall Positions] Error:", msg.slice(0, 80));
+          }
         }
-        return new Map();
       }
+      if (!success) return new Map();
     } else {
       const calls = fnData.map(data => ({ to: TRADING_ADDRESS, data }));
-      try {
-        results = await batchJsonRpc(rpcUrl, calls);
-        await sleep(300);
-      } catch (e) {
-        const msg = e.message || '';
-        if (isRpcRateLimitError(msg)) {
-          console.log("[Batch RPC Positions] Rate limited, cooldown 6s...");
-          await sleep(6000);
-        } else {
-          console.error("[Batch RPC Positions] Error:", msg.slice(0, 80));
+      let success = false;
+      for (let attempt = 0; attempt < Math.min(3, pool.urls.length); attempt++) {
+        const { url: rpcUrl } = pool.getReadProvider();
+        try {
+          results = await batchJsonRpc(rpcUrl, calls);
+          pool.markSuccess(rpcUrl);
+          success = true;
+          await sleep(300);
+          break;
+        } catch (e) {
+          pool.markFail(rpcUrl);
+          const msg = e.message || '';
+          if (isRpcRateLimitError(msg)) {
+            continue;
+          } else {
+            console.error("[Batch RPC Positions] Error:", msg.slice(0, 80));
+          }
         }
-        return new Map();
       }
+      if (!success) return new Map();
     }
 
     const parsed = new Map();
@@ -508,25 +581,43 @@ async function main() {
     return parsed;
   }
 
+  // ──────────── Main Loop ────────────
   async function scanAndExecute() {
     if (isRunning) return;
     isRunning = true;
     loopCount++;
 
     try {
+      // ═══════════════════════════════
+      // STEP 1: Sync next IDs (2 RPC calls)
+      // ═══════════════════════════════
       let nextOrderId, nextPosId;
-      try {
-        nextOrderId = Number(await tradingContract.nextOrderId());
-        await sleep(500);
-        nextPosId = Number(await tradingContract.nextPositionId());
-      } catch (e) {
-        const reason = e.message || '';
-        if (isRpcRateLimitError(reason)) {
-          if (loopCount % 5 === 0) console.log(`[Cycle ${loopCount}] ⏳ RPC rate limited or busy, backing off 6s...`);
-          await sleep(6000);
-        } else {
-          console.error(`[Sync Error] ${reason.slice(0, 100)}`);
+      // Try multiple RPCs for sync reads
+      let syncOk = false;
+      for (let attempt = 0; attempt < Math.min(3, pool.urls.length); attempt++) {
+        const { provider: readProv, url: rpcUrl } = pool.getReadProvider();
+        try {
+          const readTrading = new ethers.Contract(TRADING_ADDRESS, tradingAbi, readProv);
+          nextOrderId = Number(await readTrading.nextOrderId());
+          await sleep(300);
+          nextPosId = Number(await readTrading.nextPositionId());
+          pool.markSuccess(rpcUrl);
+          syncOk = true;
+          break;
+        } catch (e) {
+          pool.markFail(rpcUrl);
+          const reason = e.message || '';
+          if (isRpcRateLimitError(reason)) {
+            continue; // try next RPC
+          } else {
+            console.error(`[Sync Error] ${reason.slice(0, 100)}`);
+            break;
+          }
         }
+      }
+      if (!syncOk) {
+        if (loopCount % 5 === 0) console.log(`[Cycle ${loopCount}] ⏳ All RPCs busy, backing off 4s...`);
+        await sleep(4000);
         isRunning = false;
         return;
       }
@@ -540,19 +631,25 @@ async function main() {
         lastKnownNextPosId = nextPosId;
       }
 
+      // ═══════════════════════════════
+      // STEP 2: Batch-read ALL orders in 1 call
+      // ═══════════════════════════════
+      // Build list of order IDs to check (skip confirmed done)
       const orderIdsToCheck = [];
       for (let i = 1; i < nextOrderId; i++) {
         if (!confirmedDone.has(i)) orderIdsToCheck.push(i);
       }
 
       if (orderIdsToCheck.length > 0) {
-        await sleep(500);
+        await sleep(500); // Breathing room for RPC
 
+        // Split into chunks (use 4 for JSON-RPC fallback to avoid rate limit, 50 for Multicall3)
         const CHUNK_SIZE = useMulticall ? 50 : 4;
         for (let chunk = 0; chunk < orderIdsToCheck.length; chunk += CHUNK_SIZE) {
           const chunkIds = orderIdsToCheck.slice(chunk, chunk + CHUNK_SIZE);
           const ordersMap = await batchReadOrders(chunkIds);
 
+          // Process results
           const activeOrders = [];
           for (const [orderId, order] of ordersMap) {
             if (!order.isActive) {
@@ -568,9 +665,10 @@ async function main() {
           }
 
           if (activeOrders.length > 0) {
-            await sleep(1000);
+            await sleep(1000); // Give Arc RPC time to reset bucket after batch read
           }
 
+          // Execute active orders one by one (these need Pyth + tx, so sequential)
           for (const order of activeOrders) {
             const failCount = failedOrders.get(order.orderId) || 0;
             if (failCount >= 5 && loopCount % 30 !== 0) continue;
@@ -580,17 +678,21 @@ async function main() {
             const pairName = PAIR_ID_TO_NAME[order.pairId] || '???';
             if (!pythId) continue;
 
+            // Fetch Pyth VAA (external API, no RPC)
             const updateData = await fetchPythVaa(pythId);
             if (updateData.length === 0) continue;
 
+            // Simulate tx (use a read RPC to avoid burning write quota)
             try {
-              await tradingContract.executeOrder.staticCall(order.orderId, updateData, { value: PYTH_FEE });
+              const { provider: simProv, url: simUrl } = pool.getReadProvider();
+              const simTrading = new ethers.Contract(TRADING_ADDRESS, tradingAbi, simProv);
+              await simTrading.executeOrder.staticCall(order.orderId, updateData, { value: PYTH_FEE });
+              pool.markSuccess(simUrl);
             } catch (simErr) {
               const reason = extractRevertReason(simErr);
               if (isRpcRateLimitError(reason)) {
-                console.log(`[Rate Limit] Hit during sim of Order #${order.orderId} (${reason.slice(0, 40)}). Cooldown 4s...`);
-                await sleep(4000);
-                continue;
+                pool.markFail(simUrl);
+                continue; // auto-failover to next RPC on next attempt
               }
               failedOrders.set(order.orderId, failCount + 1);
               if (reason.includes('Not active')) { confirmedDone.add(order.orderId); continue; }
@@ -599,11 +701,12 @@ async function main() {
               continue;
             }
 
+            // Simulation passed → send tx
             console.log(`[Order #${order.orderId}] ✅ ${typeName} ${pairName} — executing...`);
-            await sleep(1500);
+            await sleep(1500); // 1.5s cooldown so Arc RPC rate limit bucket resets before sending tx
 
             try {
-              const gp = await getCachedGasPrice(provider);
+              const gp = await getCachedGasPrice(pool);
               const nonce = await getNextNonce(wallet, provider);
               const txReq = await tradingContract.executeOrder.populateTransaction(order.orderId, updateData, {
                 value: PYTH_FEE,
@@ -614,9 +717,22 @@ async function main() {
               });
 
               const signedTx = await wallet.signTransaction(txReq);
-              const txHash = await provider.send('eth_sendRawTransaction', [signedTx]);
+              // Try sending tx via multiple RPCs
+              let txHash;
+              for (let txAttempt = 0; txAttempt < Math.min(3, pool.urls.length); txAttempt++) {
+                const { provider: writeProv, url: writeUrl } = pool.getWriteProvider();
+                try {
+                  txHash = await writeProv.send('eth_sendRawTransaction', [signedTx]);
+                  pool.markSuccess(writeUrl);
+                  break;
+                } catch (sendErr) {
+                  pool.markFail(writeUrl);
+                  if (txAttempt === Math.min(3, pool.urls.length) - 1) throw sendErr;
+                }
+              }
               console.log(`  🚀 Tx: ${txHash}`);
-              const receipt = await waitReceipt(provider, txHash);
+              const { provider: receiptProv } = pool.getReadProvider();
+              const receipt = await waitReceipt(receiptProv, txHash);
               if (receipt && receipt.status === 1) {
                 console.log(`  ✅ Order #${order.orderId} EXECUTED! Gas: ${receipt.gasUsed}`);
                 if (order.orderType !== 4) {
@@ -631,21 +747,22 @@ async function main() {
               resetNonce();
               const reason = extractRevertReason(txErr);
               if (isRpcRateLimitError(reason)) {
-                console.log(`  ⏳ Tx rate limited (${reason.slice(0, 40)}). Cooldown 4s...`);
-                await sleep(4000);
-                continue;
+                continue; // nonce already reset, next loop will try again with different RPC
               }
               failedOrders.set(order.orderId, failCount + 1);
               console.error(`  ❌ Order #${order.orderId} tx failed: ${reason}`);
             }
 
-            await sleep(500);
+            await sleep(500); // Space between executions
           }
 
           if (chunk + CHUNK_SIZE < orderIdsToCheck.length) await sleep(1000);
         }
       }
 
+      // ═══════════════════════════════
+      // STEP 3: Batch-read positions (every 3rd cycle)
+      // ═══════════════════════════════
       if (loopCount % 3 === 0) {
         const posIdsToCheck = [];
         for (let i = 1; i < nextPosId; i++) {
@@ -670,21 +787,27 @@ async function main() {
               const pairName = PAIR_ID_TO_NAME[pos.pairId] || '???';
               if (!pythId) continue;
 
+              // Only fetch Pyth if TP/SL is set (or always check liquidation)
               const updateData = await fetchPythVaa(pythId);
               if (updateData.length === 0) continue;
 
+              // Try Liquidation (simulate first)
               try {
-                await tradingContract.liquidate.staticCall(posId, updateData, { value: PYTH_FEE });
+                const { provider: liqSimProv } = pool.getReadProvider();
+                const liqSimTrading = new ethers.Contract(TRADING_ADDRESS, tradingAbi, liqSimProv);
+                await liqSimTrading.liquidate.staticCall(posId, updateData, { value: PYTH_FEE });
                 await sleep(1500);
-                const gp = await getCachedGasPrice(provider);
+                const gp = await getCachedGasPrice(pool);
                 const nonce = await getNextNonce(wallet, provider);
                 const txReq = await tradingContract.liquidate.populateTransaction(posId, updateData, {
                   value: PYTH_FEE, gasLimit: 1_000_000n, gasPrice: gp, nonce: nonce, chainId: 5042002
                 });
                 const signedTx = await wallet.signTransaction(txReq);
-                const txHash = await provider.send('eth_sendRawTransaction', [signedTx]);
+                const { provider: liqWriteProv } = pool.getWriteProvider();
+                const txHash = await liqWriteProv.send('eth_sendRawTransaction', [signedTx]);
                 console.log(`[Pos #${posId}] 💥 LIQ ${pairName} tx: ${txHash}`);
-                const receipt = await waitReceipt(provider, txHash);
+                const { provider: liqReceiptProv } = pool.getReadProvider();
+                const receipt = await waitReceipt(liqReceiptProv, txHash);
                 if (receipt && receipt.status === 1) {
                   console.log(`[Pos #${posId}] ✅ LIQUIDATED!`);
                   confirmedClosed.add(posId);
@@ -692,19 +815,24 @@ async function main() {
                 }
               } catch { resetNonce(); }
 
+              // Try TP/SL
               if (pos.tpPrice > 0n || pos.slPrice > 0n) {
                 try {
-                  await tradingContract.executeTPSL.staticCall(posId, updateData, { value: PYTH_FEE });
+                  const { provider: tpslSimProv } = pool.getReadProvider();
+                  const tpslSimTrading = new ethers.Contract(TRADING_ADDRESS, tradingAbi, tpslSimProv);
+                  await tpslSimTrading.executeTPSL.staticCall(posId, updateData, { value: PYTH_FEE });
                   await sleep(1500);
-                  const gp = await getCachedGasPrice(provider);
+                  const gp = await getCachedGasPrice(pool);
                   const nonce = await getNextNonce(wallet, provider);
                   const txReq = await tradingContract.executeTPSL.populateTransaction(posId, updateData, {
                     value: PYTH_FEE, gasLimit: 1_000_000n, gasPrice: gp, nonce: nonce, chainId: 5042002
                   });
                   const signedTx = await wallet.signTransaction(txReq);
-                  const txHash = await provider.send('eth_sendRawTransaction', [signedTx]);
+                  const { provider: tpslWriteProv } = pool.getWriteProvider();
+                  const txHash = await tpslWriteProv.send('eth_sendRawTransaction', [signedTx]);
                   console.log(`[Pos #${posId}] 🎯 TP/SL ${pairName} tx: ${txHash}`);
-                  const receipt = await waitReceipt(provider, txHash);
+                  const { provider: tpslReceiptProv } = pool.getReadProvider();
+                  const receipt = await waitReceipt(tpslReceiptProv, txHash);
                   if (receipt && receipt.status === 1) {
                     console.log(`[Pos #${posId}] ✅ TP/SL EXECUTED!`);
                     confirmedClosed.add(posId);
@@ -720,10 +848,12 @@ async function main() {
         }
       }
 
+      // Periodic balance check
       if (loopCount % 30 === 1) {
         try {
           await sleep(500);
-          const bal = await provider.getBalance(wallet.address);
+          const { provider: balProv } = pool.getReadProvider();
+          const bal = await balProv.getBalance(wallet.address);
           console.log(`[Cycle ${loopCount}] 💰 Balance: ${Number(ethers.formatEther(bal)).toFixed(4)} ARC | Done: ${confirmedDone.size} orders, ${confirmedClosed.size} positions`);
         } catch { }
       }
@@ -735,6 +865,7 @@ async function main() {
     }
   }
 
+  // Run every 4 seconds for faster order execution
   const INTERVAL = 4000;
   console.log(`🟢 Bot v1 running. Polling every ${INTERVAL / 1000}s...\n`);
   setInterval(scanAndExecute, INTERVAL);
@@ -752,7 +883,7 @@ Create a `.env` file inside your `contracts/` folder and insert your Keeper Wall
 ```bash
 # contracts/.env
 BOT_KEEPER_PRIVATE_KEY=your_private_key_here
-ARC_TESTNET_RPC_URL=https://rpc.testnet.arc.network
+ARC_TESTNET_RPC_URL=https://rpc.testnet.arc.io,https://rpc.drpc.testnet.arc.io
 ```
 
 ::: warning Private Key Security & Wallet Isolation
