@@ -125,6 +125,52 @@ const ORDER_TYPE_NAMES = {
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
+// ──────────── Multi-RPC Pool (GMX/Avantis-style) ────────────
+// Official Arc Testnet RPC endpoints: https://docs.arc.io/arc/references/rpc-endpoints
+const DEFAULT_RPC_URLS = [
+  'https://rpc.testnet.arc.io',
+  'https://rpc.drpc.testnet.arc.io',
+  'https://rpc.quicknode.testnet.arc.io',
+  'https://rpc.blockdaemon.testnet.arc.io',
+];
+
+class RpcPool {
+  constructor(urls, chainId = 5042002) {
+    this.urls = urls;
+    this.chainId = chainId;
+    this.providers = urls.map(url => new ethers.JsonRpcProvider(url, chainId, { staticNetwork: true }));
+    this.readIndex = 0;
+    this.failCounts = new Map();
+    this.cooldownUntil = new Map();
+    console.log(`🌐 RPC Pool: ${urls.length} endpoints loaded`);
+  }
+  getReadProvider() {
+    const now = Date.now();
+    for (let attempt = 0; attempt < this.urls.length; attempt++) {
+      const idx = this.readIndex % this.urls.length;
+      this.readIndex++;
+      const url = this.urls[idx];
+      if (now < (this.cooldownUntil.get(url) || 0)) continue;
+      return { provider: this.providers[idx], url, index: idx };
+    }
+    return { provider: this.providers[0], url: this.urls[0], index: 0 };
+  }
+  getWriteProvider() {
+    const now = Date.now();
+    for (let i = 0; i < this.urls.length; i++) {
+      if (now < (this.cooldownUntil.get(this.urls[i]) || 0)) continue;
+      return { provider: this.providers[i], url: this.urls[i], index: i };
+    }
+    return { provider: this.providers[0], url: this.urls[0], index: 0 };
+  }
+  markFail(url) {
+    const count = (this.failCounts.get(url) || 0) + 1;
+    this.failCounts.set(url, count);
+    if (count >= 3) this.cooldownUntil.set(url, Date.now() + 10_000);
+  }
+  markSuccess(url) { this.failCounts.set(url, 0); }
+}
+
 // ──────────── Multicall3 ────────────
 const MULTICALL3_ADDR = "0xcA11bde05977b3631167028862bE2a173976CA11";
 const MULTICALL3_ABI = [
@@ -245,8 +291,13 @@ async function main() {
   console.log("🤖 Starting Confidential DEX Keeper Bot v1 (Batch Mode)...");
   console.log("═══════════════════════════════════════════════════════");
 
-  const rpcUrl = process.env.ARC_TESTNET_RPC_URL || "https://rpc.testnet.arc.network";
-  const provider = new ethers.JsonRpcProvider(rpcUrl, 5042002, { staticNetwork: true });
+  // Build RPC pool from env (comma-separated) or defaults
+  const envRpc = process.env.ARC_TESTNET_RPC_URL || '';
+  const rpcUrls = envRpc
+    ? envRpc.split(',').map(u => u.trim()).filter(Boolean)
+    : DEFAULT_RPC_URLS;
+  const pool = new RpcPool(rpcUrls);
+  const provider = pool.providers[0]; // primary for wallet binding
   const pk = process.env.BOT_KEEPER_PRIVATE_KEY || process.env.PRIVATE_KEY;
 
   if (!pk) { console.error("❌ No private key found!"); process.exit(1); }
