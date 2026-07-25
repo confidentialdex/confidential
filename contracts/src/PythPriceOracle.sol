@@ -62,6 +62,11 @@ contract PythPriceOracle is Initializable {
         emit PriceFeedSet(pairId, pythFeedId);
     }
 
+    /// @notice Set the underlying Pyth contract address
+    function setPyth(address _pyth) external onlyOwner {
+        pyth = IPyth(_pyth);
+    }
+
     /// @notice Batch-register multiple feeds
     function setPriceFeedsBatch(bytes32[] calldata pairIds, bytes32[] calldata pythFeedIds) external onlyOwner {
         require(pairIds.length == pythFeedIds.length, "Length mismatch");

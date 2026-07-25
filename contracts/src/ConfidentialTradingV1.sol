@@ -1049,4 +1049,19 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
         require(_bps <= 100, "Max 1% buffer");
         executionBufferBps = _bps;
     }
+
+    function setCore(address _core) external onlyOwner {
+        require(_core != address(0), "Zero address");
+        core = ConfidentialCoreV1(_core);
+    }
+
+    function setVault(address _vault) external onlyOwner {
+        require(_vault != address(0), "Zero address");
+        vault = ConfidentialVaultV1(_vault);
+    }
+
+    function setOracle(address _oracle) external onlyOwner {
+        require(_oracle != address(0), "Zero address");
+        oracle = PythPriceOracle(_oracle);
+    }
 }

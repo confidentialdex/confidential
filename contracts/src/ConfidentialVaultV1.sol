@@ -526,6 +526,11 @@ contract ConfidentialVaultV1 is Initializable, ReentrancyGuard {
         primeLockupPeriod = _primeSeconds;
     }
 
+    function setCore(address _core) external onlyOwner {
+        if (_core == address(0)) revert ZeroAddress();
+        core = ConfidentialCoreV1(_core);
+    }
+
     // ══════════════════════════════════════════════════════════
     //                    VIEW FUNCTIONS
     // ══════════════════════════════════════════════════════════

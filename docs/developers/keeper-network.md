@@ -345,7 +345,7 @@ async function main() {
   } catch { }
 
   // Load Trading address
-  let TRADING_ADDRESS = "0x26c357F2d84842d67F584E6b532bC0d94dC29fEd";
+  let TRADING_ADDRESS = "0x61DDc8A6614e4F519649Fa8a0D76dd75356e8D70";
   try {
     const dpProxies1 = path.join(__dirname, "latest_deploy_proxies.json");
     const dpProxies2 = path.join(__dirname, "scripts/latest_deploy_proxies.json");
@@ -400,7 +400,17 @@ async function main() {
     console.log("ℹ️  Multicall3 not found, using JSON-RPC batch fallback");
   }
 
-  const PYTH_FEE = 0n; // 0 fee on Arc Testnet Pyth contract (prevents 'Zero address not allowed')
+  // Dynamic Pyth fee — query from Pyth contract instead of hardcoding 0
+  const PYTH_ADDRESS = '0x2880aB155794e7179c9eE2e38200202908C17B43';
+  const PYTH_FEE_ABI = ["function getUpdateFee(bytes[] calldata updateData) view returns (uint256)"];
+  async function getPythFee(readProvider, updateData) {
+    try {
+      const pythContract = new ethers.Contract(PYTH_ADDRESS, PYTH_FEE_ABI, readProvider);
+      return await pythContract.getUpdateFee(updateData);
+    } catch {
+      return 1n; // fallback: 1 wei if query fails
+    }
+  }
 
   // ──────────── State ────────────
   let lastKnownNextOrderId = 1;
@@ -682,11 +692,14 @@ async function main() {
             const updateData = await fetchPythVaa(pythId);
             if (updateData.length === 0) continue;
 
+            // Query dynamic Pyth fee for this update
+            const { provider: simProv, url: simUrl } = pool.getReadProvider();
+            const pythFee = await getPythFee(simProv, updateData);
+
             // Simulate tx (use a read RPC to avoid burning write quota)
             try {
-              const { provider: simProv, url: simUrl } = pool.getReadProvider();
               const simTrading = new ethers.Contract(TRADING_ADDRESS, tradingAbi, simProv);
-              await simTrading.executeOrder.staticCall(order.orderId, updateData, { value: PYTH_FEE });
+              await simTrading.executeOrder.staticCall(order.orderId, updateData, { value: pythFee });
               pool.markSuccess(simUrl);
             } catch (simErr) {
               const reason = extractRevertReason(simErr);
@@ -709,7 +722,7 @@ async function main() {
               const gp = await getCachedGasPrice(pool);
               const nonce = await getNextNonce(wallet, provider);
               const txReq = await tradingContract.executeOrder.populateTransaction(order.orderId, updateData, {
-                value: PYTH_FEE,
+                value: pythFee,
                 gasLimit: 1_000_000n,
                 gasPrice: gp,
                 nonce: nonce,
@@ -792,15 +805,16 @@ async function main() {
               if (updateData.length === 0) continue;
 
               // Try Liquidation (simulate first)
+              const { provider: liqSimProv } = pool.getReadProvider();
+              const liqPythFee = await getPythFee(liqSimProv, updateData);
               try {
-                const { provider: liqSimProv } = pool.getReadProvider();
                 const liqSimTrading = new ethers.Contract(TRADING_ADDRESS, tradingAbi, liqSimProv);
-                await liqSimTrading.liquidate.staticCall(posId, updateData, { value: PYTH_FEE });
+                await liqSimTrading.liquidate.staticCall(posId, updateData, { value: liqPythFee });
                 await sleep(1500);
                 const gp = await getCachedGasPrice(pool);
                 const nonce = await getNextNonce(wallet, provider);
                 const txReq = await tradingContract.liquidate.populateTransaction(posId, updateData, {
-                  value: PYTH_FEE, gasLimit: 1_000_000n, gasPrice: gp, nonce: nonce, chainId: 5042002
+                  value: liqPythFee, gasLimit: 1_000_000n, gasPrice: gp, nonce: nonce, chainId: 5042002
                 });
                 const signedTx = await wallet.signTransaction(txReq);
                 const { provider: liqWriteProv } = pool.getWriteProvider();
@@ -819,13 +833,14 @@ async function main() {
               if (pos.tpPrice > 0n || pos.slPrice > 0n) {
                 try {
                   const { provider: tpslSimProv } = pool.getReadProvider();
+                  const tpslPythFee = await getPythFee(tpslSimProv, updateData);
                   const tpslSimTrading = new ethers.Contract(TRADING_ADDRESS, tradingAbi, tpslSimProv);
-                  await tpslSimTrading.executeTPSL.staticCall(posId, updateData, { value: PYTH_FEE });
+                  await tpslSimTrading.executeTPSL.staticCall(posId, updateData, { value: tpslPythFee });
                   await sleep(1500);
                   const gp = await getCachedGasPrice(pool);
                   const nonce = await getNextNonce(wallet, provider);
                   const txReq = await tradingContract.executeTPSL.populateTransaction(posId, updateData, {
-                    value: PYTH_FEE, gasLimit: 1_000_000n, gasPrice: gp, nonce: nonce, chainId: 5042002
+                    value: tpslPythFee, gasLimit: 1_000_000n, gasPrice: gp, nonce: nonce, chainId: 5042002
                   });
                   const signedTx = await wallet.signTransaction(txReq);
                   const { provider: tpslWriteProv } = pool.getWriteProvider();

@@ -164,6 +164,11 @@ contract ConfidentialCoreV1 is Initializable {
         keeper = _keeper;
     }
 
+    function setOracle(address _oracle) external onlyOwner {
+        if (_oracle == address(0)) revert ZeroAddress();
+        oracle = PythPriceOracle(_oracle);
+    }
+
     function pause() external onlyOwner {
         paused = true;
         emit Paused();

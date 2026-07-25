@@ -1,0 +1,12 @@
+{
+  "version": "V1",
+  "timestamp": "2026-07-25T13:10:39.072Z",
+  "network": "Arc Testnet",
+  "deployer": "0x1f61FD9AcB266757cb6453F69F6ca41E85Ed880e",
+  "usdcAddress": "0x3600000000000000000000000000000000000000",
+  "pythAddress": "0x2880aB155794e7179c9eE2e38200202908C17B43",
+  "oracleAddress": "0x9412f25FE26D924DD7729Ae6407F060e34A5b3a4",
+  "coreAddress": "0x5539f6388B921aEA3df086A5704B049c41D6C110",
+  "vaultAddress": "0xFA9eEC6c9D64DD4863fDb9990f5cb5b3CfE812C3",
+  "tradingAddress": "0x61DDc8A6614e4F519649Fa8a0D76dd75356e8D70"
+}

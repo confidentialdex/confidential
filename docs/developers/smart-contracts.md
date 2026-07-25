@@ -67,10 +67,10 @@ Use these addresses if you wish to build analytics dashboards, quant strategies,
 
 | Contract Module | Proxy Address | Description |
 | :--- | :--- | :--- |
-| **Confidential Core V1** | `0xBe7b5a030b9e30BD4F6a2Cdf3De2ab14d4E49767` | Protocol brain: Open Interest limits, utilization caps, fees, and funding rate engine. |
-| **Confidential Trading V1** | `0x26c357F2d84842d67F584E6b532bC0d94dC29fEd` | Primary gateway for margin trading, order triggers, TWAP execution, and liquidations. |
-| **Confidential Vault V1** | `0xE9723B722Db4516F1e807ef25e15b61170459dA5` | Dual-tranche shared-loss LP pool with ERC-4626 compliant yield & capital floor. |
-| **Pyth Price Oracle** | `0x85ce6Ed04e2bCfdde5B1994d443836AeAdCa3176` | Oracle adapter enforcing maximum price staleness and cryptographic validation. |
+| **Confidential Core V1** | `0x5539f6388B921aEA3df086A5704B049c41D6C110` | Protocol brain: Open Interest limits, utilization caps, fees, and funding rate engine. |
+| **Confidential Trading V1** | `0x61DDc8A6614e4F519649Fa8a0D76dd75356e8D70` | Primary gateway for margin trading, order triggers, TWAP execution, and liquidations. |
+| **Confidential Vault V1** | `0xFA9eEC6c9D64DD4863fDb9990f5cb5b3CfE812C3` | Dual-tranche shared-loss LP pool with ERC-4626 compliant yield & capital floor. |
+| **Pyth Price Oracle** | `0x9412f25FE26D924DD7729Ae6407F060e34A5b3a4` | Oracle adapter enforcing maximum price staleness and cryptographic validation. |
 | **DEX Proxy Admin** | `0x14C52C9Dc2fBFc58429744AE3631Ea6460C16349` | Governance admin contract responsible for safe logic proxy migrations. |
 | **USDC Token (Arc)** | `0x3600000000000000000000000000000000000000` | Native 6-decimal base currency for all collateral deposits and LP stakes. |
 
