@@ -42,3 +42,9 @@ contracts/flattened/
 scratch/
 artifacts/
 cache/
+
+# Deployment state files
+contracts/scripts/latest_deploy.json
+contracts/scripts/latest_deploy_proxies.json
+latest_deploy.json
+latest_deploy_proxies.json
