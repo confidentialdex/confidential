@@ -265,7 +265,7 @@ async function main() {
   } catch { }
 
   // Load Trading address
-  let TRADING_ADDRESS = "0x61DDc8A6614e4F519649Fa8a0D76dd75356e8D70";
+  let TRADING_ADDRESS = "0xc07368d1dfb34AB43c4c113aA87b656ee5B04634";
   try {
     const dp = path.join(__dirname, "../deployments/v1.json");
     if (fs.existsSync(dp)) {

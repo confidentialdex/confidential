@@ -98,11 +98,11 @@ For an in-depth understanding of the platform's tier-1 circuit breakers, quadrat
 
 | Contract | Address | Explorer Link |
 | :--- | :--- | :--- |
-| **ConfidentialCoreV1 (Proxy)** | `0x5539f6388B921aEA3df086A5704B049c41D6C110` | [View Explorer](https://testnet.arcscan.app/address/0x5539f6388B921aEA3df086A5704B049c41D6C110) |
-| **ConfidentialTradingV1 (Proxy)** | `0x61DDc8A6614e4F519649Fa8a0D76dd75356e8D70` | [View Explorer](https://testnet.arcscan.app/address/0x61DDc8A6614e4F519649Fa8a0D76dd75356e8D70) |
-| **ConfidentialVaultV1 (Proxy)** | `0xFA9eEC6c9D64DD4863fDb9990f5cb5b3CfE812C3` | [View Explorer](https://testnet.arcscan.app/address/0xFA9eEC6c9D64DD4863fDb9990f5cb5b3CfE812C3) |
-| **USDC Mock Token** | `0x3600000000000000000000000000000000000000` | [View Explorer](https://testnet.arcscan.app/address/0x3600000000000000000000000000000000000000) |
-| **Pyth Oracle (Proxy)** | `0x9412f25FE26D924DD7729Ae6407F060e34A5b3a4` | [View Explorer](https://testnet.arcscan.app/address/0x9412f25FE26D924DD7729Ae6407F060e34A5b3a4) |
+| **ConfidentialCoreV1 (Proxy)** | `0x9acec9Ad24870f95927224FfC5E1c94274492cd8` | [View Explorer](https://testnet.arcscan.app/address/0x9acec9Ad24870f95927224FfC5E1c94274492cd8) |
+| **ConfidentialTradingV1 (Proxy)** | `0xc07368d1dfb34AB43c4c113aA87b656ee5B04634` | [View Explorer](https://testnet.arcscan.app/address/0xc07368d1dfb34AB43c4c113aA87b656ee5B04634) |
+| **ConfidentialVaultV1 (Proxy)** | `0x31cabF85147b42184E2d053f0e9c0d60357ea1EC` | [View Explorer](https://testnet.arcscan.app/address/0x31cabF85147b42184E2d053f0e9c0d60357ea1EC) |
+| **DEXProxyAdmin** | `0x14C52C9Dc2fBFc58429744AE3631Ea6460C16349` | [View Explorer](https://testnet.arcscan.app/address/0x14C52C9Dc2fBFc58429744AE3631Ea6460C16349) |
+| **Pyth Oracle (Proxy)** | `0x06D2cDcE80b76ef3F0150ff502A3c55E7D9c4F7C` | [View Explorer](https://testnet.arcscan.app/address/0x06D2cDcE80b76ef3F0150ff502A3c55E7D9c4F7C) |
 
 ---
 

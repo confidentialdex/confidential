@@ -10,9 +10,9 @@ As a mathematical safety net for both trader asset sizing and liquidity reserves
 
 | Asset Class | Category / Examples | Max Leverage | Max OI / Liquidity Limit (L/S) | Description |
 | :--- | :--- | :---: | :---: | :--- |
-| **Tier 1 (Major)** | Major Crypto (`BTC/USDC`, `ETH/USDC`) | **100x** | **$10,000,000 ($10M)** | Supported by the deepest liquidity and highest capacity per side. Ideal for institutional volume and aggressive scalping. |
-| **Tier 2 (Mid)**| Altcoins (`SOL`, `BNB`, `DOGE`, `PEPE`, etc.), Stock Indices (`SPY`), Commodities (`GOLD`, `SILVER`) | **20x - 50x** | **$5,000,000 ($5M)** | High volatility or gaps. Leverage and open interest capacity are capped to prevent instant liquidations and protect vault reserves. |
-| **Tier 3 (Minors)** | Others | **20x** | **$5,000,000 ($5M)** | Slower-moving or highly volatile assets. |
+| **Tier 1 (Major & Forex)** | Major Crypto (`BTC/USDC`, `ETH/USDC`, `SOL/USDC`), Forex (`EUR/USDC`, `GBP/USDC`, `USDJPY/USDC`) | **100x** | **$10,000,000 ($10M) for Crypto, $5,000,000 ($5M) for Forex** | Supported by the deepest liquidity and highest capacity per side. Ideal for institutional volume and aggressive scalping. |
+| **Tier 2 (Mid)**| Altcoins (`BNB`, `DOGE`, `PEPE`, etc.), Commodities (`GOLD`, `SILVER`) | **50x** | **$5,000,000 ($5M)** | High volatility or gaps. Leverage and open interest capacity are capped to prevent instant liquidations and protect vault reserves. |
+| **Tier 3 (Equities)** | Stock Indices (`SPY`) & Stocks (`AAPL`, `TSLA`, `NVDA`) | **20x** | **$5,000,000 ($5M)** | Traditional market assets with specific trading hours gaps. Strictly capped to 20x leverage. |
 
 ---
 

@@ -4,8 +4,8 @@ const VaultABI = require("../../../src/abis/ConfidentialVaultV1.json");
 
 async function main() {
   const provider = new ethers.JsonRpcProvider("https://rpc.drpc.testnet.arc.network");
-  const core = new ethers.Contract("0x5539f6388B921aEA3df086A5704B049c41D6C110", CoreABI.abi || CoreABI, provider);
-  const vault = new ethers.Contract("0xFA9eEC6c9D64DD4863fDb9990f5cb5b3CfE812C3", VaultABI.abi || VaultABI, provider);
+  const core = new ethers.Contract("0x9acec9Ad24870f95927224FfC5E1c94274492cd8", CoreABI.abi || CoreABI, provider);
+  const vault = new ethers.Contract("0x31cabF85147b42184E2d053f0e9c0d60357ea1EC", VaultABI.abi || VaultABI, provider);
 
 
   

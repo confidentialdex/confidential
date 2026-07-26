@@ -6,9 +6,9 @@ dataSources:
     name: ConfidentialTrading
     network: arc-testnet
     source:
-      address: "0x61DDc8A6614e4F519649Fa8a0D76dd75356e8D70"
+      address: "0xc07368d1dfb34AB43c4c113aA87b656ee5B04634"
       abi: ConfidentialTrading
-      startBlock: 53597000
+      startBlock: 53756700
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -52,9 +52,9 @@ dataSources:
     name: ConfidentialVault
     network: arc-testnet
     source:
-      address: "0xFA9eEC6c9D64DD4863fDb9990f5cb5b3CfE812C3"
+      address: "0x31cabF85147b42184E2d053f0e9c0d60357ea1EC"
       abi: ConfidentialVault
-      startBlock: 53597000
+      startBlock: 53756700
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

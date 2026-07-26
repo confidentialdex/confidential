@@ -1055,7 +1055,7 @@ export default function Home() {
                 <p className="t-body-md" style={{ color: '#bacbbb', margin: 0, lineHeight: '28px', fontSize: 16 }}>
                   {activeStrategyTab === 'metals' && 'Metals like Gold and Silver often retain or grow their value during economic uncertainty. Pair up to 50x leverage on GOLD/USDC and SILVER/USDC backed by one unified liquidity pool.'}
                   {activeStrategyTab === 'forex' && 'Capture macro rate shifts on EUR/USDC, GBP/USDC, and USDJPY/USDC. Benefit from institutional-grade liquidity and zero P2P matching delays.'}
-                  {activeStrategyTab === 'equities' && 'Long or short NVDA/USDC, AAPL/USDC, and TSLA/USDC synthetics with up to 20x leverage (and 50x on SPY/USDC). No brokerage cut-off hours, no geographic restrictions.'}
+                  {activeStrategyTab === 'equities' && 'Long or short NVDA/USDC, AAPL/USDC, TSLA/USDC, and SPY/USDC synthetics with up to 20x leverage. No brokerage cut-off hours, no geographic restrictions.'}
                 </p>
               </div>
 
