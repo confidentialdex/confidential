@@ -155,7 +155,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
     let isBalancing = false;
 
     // Neutral Case
-    if (longOIVal === shortOIVal || longOIVal === 0 || shortOIVal === 0) {
+    if (longOIVal === shortOIVal) {
       overshootSize = sizeUsdValue;
       isBalancing = false;
     } else {

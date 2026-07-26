@@ -401,7 +401,7 @@ contract ConfidentialCoreV1 is Initializable {
         if (maxOI == 0 || sizeUsd == 0) return result;
 
         // Neutral Case
-        if (lOI == sOI || lOI == 0 || sOI == 0) {
+        if (lOI == sOI) {
             result.overshootSize = sizeUsd;
             result.isBalancing = false;
         } else {
