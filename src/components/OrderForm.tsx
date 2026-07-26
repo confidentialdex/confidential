@@ -496,7 +496,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
 
       {/* Dynamic Order Settings */}
       {orderType !== 'market' && (
-        <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4, marginBottom: 4, animationDuration: '200ms' }}>
+        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4, marginBottom: 4, animationDuration: '200ms' }}>
           {orderType === 'limit' && (
             <div style={{ display:'flex', flexDirection:'column', background:'var(--color-bg0)', border:'1px solid var(--color-border)', borderRadius:8, padding:'6px 10px', transition:'border 0.2s' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -578,7 +578,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
         </label>
 
         {showTpSl && (
-          <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4, animationDuration: '200ms' }}>
+          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4, animationDuration: '200ms' }}>
             <div style={{ display:'flex', flexDirection:'column', background:'var(--color-bg0)', border:'1px solid var(--color-border)', borderRadius:8, padding:'6px 10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <span style={{ fontSize:11, color:'#8e8e93' }}>Take Profit</span>
