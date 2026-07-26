@@ -376,7 +376,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
   if (!activeMarket) return null
 
   return (
-    <div style={{ display:'flex',flexDirection:'column',gap:16,background:'transparent', color:'#fff', fontFamily:'Inter, sans-serif' }}>
+    <div style={{ display:'flex',flexDirection:'column',gap:16,background:'transparent', color:'#fff', fontFamily:'Inter, sans-serif', flexShrink: 0 }}>
       
       {/* Mobile Modal Header */}
       {onClose && (

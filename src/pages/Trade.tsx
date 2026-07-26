@@ -831,6 +831,7 @@ export default function Trade() {
             flex-direction: column;
             width: 100%;
             min-width: 0;
+            flex-shrink: 0; /* Prevents form from shrinking when TP/SL is toggled */
             /* removed nested scroll to inherit parent scroll and padding */
           }
           .mobile-hidden {
