@@ -347,15 +347,12 @@ async function main() {
   // Load Trading address
   let TRADING_ADDRESS = "0xc07368d1dfb34AB43c4c113aA87b656ee5B04634";
   try {
-    const dpProxies1 = path.join(__dirname, "latest_deploy_proxies.json");
-    const dpProxies2 = path.join(__dirname, "scripts/latest_deploy_proxies.json");
-    const dp1 = path.join(__dirname, "latest_deploy.json");
-    const dp2 = path.join(__dirname, "scripts/latest_deploy.json");
-    const dp = fs.existsSync(dpProxies1) ? dpProxies1 : 
-               fs.existsSync(dpProxies2) ? dpProxies2 : 
-               fs.existsSync(dp1) ? dp1 : dp2;
+    const dp = path.join(__dirname, "../deployments/v1.json");
     if (fs.existsSync(dp)) {
-      TRADING_ADDRESS = JSON.parse(fs.readFileSync(dp, "utf8")).tradingAddress;
+      const data = JSON.parse(fs.readFileSync(dp, "utf8"));
+      if (data.ConfidentialTradingV1) {
+        TRADING_ADDRESS = data.ConfidentialTradingV1;
+      }
     }
   } catch { }
   console.log(`📈 Trading: ${TRADING_ADDRESS}`);
