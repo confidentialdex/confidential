@@ -358,12 +358,7 @@ export default function Vault() {
                   </span>
                 </div>
 
-                {activeAction === 'Withdraw' && !(activeTab === 'Degen' ? canWithdrawDegen : canWithdrawPrime) && (activeTab === 'Degen' ? userDegenShares : userPrimeShares) > 0 && (
-                  <div className="panel-inner" style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', color: '#FCD34D', padding: '12px 14px', fontSize: 13, borderRadius: 8, marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span>🔒</span>
-                    <span>Withdrawal in lockup period ({activeTab === 'Degen' ? '2 days' : '5 days'}). Your shares remain safe & earning yield.</span>
-                  </div>
-                )}
+
 
                 <button className="submit-btn btn btn-green" 
                   disabled={
@@ -389,7 +384,7 @@ export default function Vault() {
                     : (activeAction === 'Withdraw' && (activeTab === 'Degen' ? userDegenShares <= 0 : userPrimeShares <= 0))
                     ? 'No Shares to Withdraw'
                     : (activeAction === 'Withdraw' && (activeTab === 'Degen' ? !canWithdrawDegen : !canWithdrawPrime))
-                    ? '🔒 Lockup Period Active'
+                    ? `🔒 Locked (${activeTab === 'Degen' ? '2' : '5'} Days)`
                     : activeAction
                   }
                 </button>
