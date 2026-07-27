@@ -105,10 +105,10 @@ export default function Topbar() {
   })
 
   const formatPrice = (price: number) => {
-    if (price >= 10000) return price.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-    if (price >= 100) return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    if (price >= 1) return price.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
-    return price.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+    if (!price) return '0.00'
+    if (price >= 1000) return price.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+    if (price >= 1) return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 })
+    return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 10 })
   }
 
   const formatVol = (v: number) => {
