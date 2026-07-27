@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import { usePrivy } from '@privy-io/react-auth'
 import { useArcWallet } from '../hooks/useArcWallet'
 import { useTradeStore } from '../store/useTradeStore'
@@ -50,13 +50,12 @@ export default function Topbar() {
 
   const { ready, login } = usePrivy()
   const { isConnected, address, balance, disconnect, isPrivyWallet, exportWallet } = useArcWallet()
-  const location = useLocation()
+
   const truncatedAddress = address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : ''
-  const { markets, activeMarketId, setActiveMarket, mobileNav, isMarketSelectorOpen, setMarketSelectorOpen, watchlist, toggleWatchlist, marketCategoryFilter, setMarketCategoryFilter } = useTradeStore()
+  const { markets, activeMarketId, setActiveMarket, isMarketSelectorOpen, setMarketSelectorOpen, watchlist, toggleWatchlist, marketCategoryFilter, setMarketCategoryFilter } = useTradeStore()
   const volumes = useAll24hVolumes()
 
   const pairStats = usePairStats()
-  const activeMarket = markets.find((m) => m.id === activeMarketId)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [marketSearch, setMarketSearch] = useState('')
@@ -73,13 +72,6 @@ export default function Topbar() {
     }
   }
 
-  const isMarketView = !location.pathname.startsWith('/portfolio') &&
-    !(location.pathname.startsWith('/trade') && mobileNav === 'account') &&
-    !location.pathname.startsWith('/vaults') &&
-    !(location.pathname.startsWith('/trade') && mobileNav === 'vaults') &&
-    !location.pathname.startsWith('/referrals') &&
-    !location.pathname.startsWith('/points') &&
-    !location.pathname.startsWith('/leaderboard');
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -148,10 +140,10 @@ export default function Topbar() {
             </svg>
           </button>
 
-          <div className="topbar-logo-wrapper desktop-only">
+          <div className="topbar-logo-wrapper">
             <NavLink to="/" className="topbar-logo" style={{ textDecoration: 'none' }}>
               <img src="/logo.png" alt="Confidential Logo" style={{ height: 28, width: 28, objectFit: 'contain' }} />
-              <span className="topbar-brand">Confidential</span>
+              <span className="topbar-brand desktop-only">Confidential</span>
             </NavLink>
           </div>
 
@@ -171,41 +163,7 @@ export default function Topbar() {
           </nav>
         </div>
 
-        {/* Center — Active Market (Mobile Only) */}
-        <div className="topbar-center mobile-only" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', flexDirection: 'column', gap: 0, justifyContent: 'center', textAlign: 'center', width: '60%' }}>
-          {!isMarketView ? (
-            <span style={{ fontWeight: 600, fontSize: 18, letterSpacing: '-0.02em' }}>
-              {location.pathname.startsWith('/portfolio') || (location.pathname.startsWith('/trade') && mobileNav === 'account') ? t('nav.portfolio') :
-                location.pathname.startsWith('/vaults') || (location.pathname.startsWith('/trade') && mobileNav === 'vaults') ? 'Vaults' :
-                  location.pathname.startsWith('/referrals') ? t('nav.referrals') :
-                    location.pathname.startsWith('/points') ? t('nav.points') :
-                      location.pathname.startsWith('/leaderboard') ? t('nav.leaderboard') : ''}
-            </span>
-          ) : (
-            <>
-              <button
-                className="market-selector-trigger"
-                onClick={() => setMarketSelectorOpen(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--color-text1)', cursor: 'pointer', marginLeft: 0, maxWidth: '100%', padding: '2px 0', minHeight: 0 }}
-              >
-                {activeMarket && getAssetLogo(activeMarket.pair) && (
-                  <img src={getAssetLogo(activeMarket.pair)} alt={activeMarket.pair} style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover', background: activeMarket.category === 'crypto' ? 'transparent' : '#fff', padding: activeMarket.category === 'rwa' ? '2px' : '0', flexShrink: 0 }} onError={(e) => e.currentTarget.style.display = 'none'} />
-                )}
-                <span className="font-mono" style={{ fontWeight: 600, fontSize: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flexShrink: 1, lineHeight: 1 }}>
-                  {activeMarket ? activeMarket.pair : t('nav.trade')}
-                </span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                  <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              {activeMarket && (
-                <span className="font-mono" style={{ fontSize: 12, color: 'var(--color-text2)', fontWeight: 500, lineHeight: 1, marginTop: '2px' }}>
-                  ${formatPrice(activeMarket.price)}
-                </span>
-              )}
-            </>
-          )}
-        </div>
+
 
         {/* Right — Wallet & Settings */}
         <div className="topbar-right">
@@ -218,11 +176,12 @@ export default function Topbar() {
 
             {!isConnected ? (
               <button
-                className="btn btn-connect-unified desktop-only"
+                className="btn btn-connect-unified"
+                style={{ padding: '6px 12px', fontSize: '13px' }}
                 onClick={login}
                 disabled={!ready}
               >
-                Connect Wallet
+                <span>Connect<span className="desktop-only">&nbsp;Wallet</span></span>
               </button>
             ) : (
               <div className="topbar-account" ref={dropdownRef}>
@@ -294,31 +253,7 @@ export default function Topbar() {
 
           </div>
 
-          {activeMarket && isMarketView && (
-            <button
-              className="favorite-btn mobile-only"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleWatchlist(activeMarket.id);
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleWatchlist(activeMarket.id);
-              }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', zIndex: 10 }}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24"
-                fill={watchlist.includes(activeMarket.id) ? '#F7931A' : 'none'}
-                stroke={watchlist.includes(activeMarket.id) ? '#F7931A' : 'currentColor'}
-                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                style={{ color: 'var(--color-text3)' }}>
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
-            </button>
-          )}
+
         </div>
       </div>
 
@@ -346,63 +281,7 @@ export default function Topbar() {
               ))}
             </nav>
             <div className="mobile-menu-footer">
-              {!isConnected ? (
-                <button
-                  className="btn"
-                  style={{ 
-                    width: '100%', 
-                    padding: '10px', 
-                    backgroundColor: 'var(--color-green, #26c68b)', 
-                    color: '#0b0e11', 
-                    borderRadius: '8px', 
-                    border: 'none',
-                    boxShadow: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '15px'
-                  }}
-                  onClick={() => { login(); setIsMobileMenuOpen(false); }}
-                  disabled={!ready}
-                >
-                  Connect Wallet
-                </button>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div className="topbar-avatar" />
-                      <span className="font-mono" style={{ color: 'var(--color-text1)' }}>{truncatedAddress}</span>
-                      <button onClick={handleCopy} title="Copy Address" style={{ background: 'none', border: 'none', color: copied ? 'var(--color-green)' : 'var(--color-text2)', cursor: 'pointer', padding: 4, display: 'flex' }}>
-                        {copied ? (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.586-1.414l-3.828-3.828A2 2 0 0014.172 1.5H10a2 2 0 00-2 2z" stroke="currentColor" strokeWidth="2"/><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" stroke="currentColor" strokeWidth="2"/></svg>
-                        )}
-                      </button>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {isPrivyWallet && exportWallet && (
-                        <button
-                          className="btn btn-ghost"
-                          style={{ padding: '8px', color: 'var(--color-text1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                          onClick={() => { exportWallet(); setIsMobileMenuOpen(false); }}
-                          title="Export Wallet"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
-                        </button>
-                      )}
-                      <button
-                        className="btn btn-ghost"
-                        style={{ padding: '8px', color: 'var(--color-red)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        onClick={() => { disconnect(); setIsMobileMenuOpen(false); }}
-                        title="Disconnect"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               <div className="mobile-socials" style={{ display: 'flex', gap: '24px', marginTop: '24px', padding: '0 8px', alignItems: 'center', justifyContent: 'center' }}>
                 <a href="https://x.com/Confidentialdex" target="_blank" rel="noreferrer" style={{ color: 'rgba(255,255,255,0.5)', transition: 'color 0.2s' }}>
@@ -1064,9 +943,6 @@ export default function Topbar() {
           .mobile-only {
             display: flex;
           }
-          .topbar-logo {
-            display: none;
-          }
           .topbar-left {
             flex: 0;
             gap: 12px;
@@ -1092,9 +968,6 @@ export default function Topbar() {
           }
           .mobile-menu-btn {
             display: block;
-          }
-          .topbar-logo {
-            display: none; /* Hidden on mobile header, shown in drawer */
           }
           .desktop-only {
             display: none !important;
