@@ -52,6 +52,7 @@ export default function Topbar() {
   const { isConnected, address, balance, disconnect, isPrivyWallet, exportWallet } = useArcWallet()
 
   const truncatedAddress = address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : ''
+  const mobileTruncatedAddress = address ? `${address.substring(0, 4)}..${address.substring(address.length - 2)}` : ''
   const { markets, activeMarketId, setActiveMarket, isMarketSelectorOpen, setMarketSelectorOpen, watchlist, toggleWatchlist, marketCategoryFilter, setMarketCategoryFilter } = useTradeStore()
   const volumes = useAll24hVolumes()
 
@@ -190,8 +191,11 @@ export default function Topbar() {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                 >
                   <div className="topbar-avatar" />
-                  <span className="font-mono" style={{ fontSize: '13px' }}>
+                  <span className="font-mono desktop-address" style={{ fontSize: '13px' }}>
                     {truncatedAddress}
+                  </span>
+                  <span className="font-mono mobile-address" style={{ fontSize: '12px' }}>
+                    {mobileTruncatedAddress}
                   </span>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: dropdownOpen ? 'rotate(180deg)' : '', transition: 'transform 200ms' }}>
                     <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -950,7 +954,16 @@ export default function Topbar() {
         }
 
         /* ═══ Mobile Responsiveness ═══ */
+        .mobile-address {
+          display: none;
+        }
         @media (max-width: 768px) {
+          .desktop-address {
+            display: none !important;
+          }
+          .mobile-address {
+            display: inline-block;
+          }
           .topbar {
             height: 60px;
           }
