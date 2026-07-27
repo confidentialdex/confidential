@@ -1,69 +1,65 @@
-# 📊 Fees & Price Impact
+# Fees & Price Impact
 
-Within this ecosystem, financial equilibrium is structured so that *Liquidity Providers* (LPs) are protected, while *Traders* are not burdened by hidden fees.
+The financial model of Confidential DEX is designed to ensure sustainable liquidity provision while maintaining transparent execution costs for traders.
 
 ---
 
-## 💰 Fee Structure
+## Fee Structure
 
 ### Trading Fees
 
 | Order Type | Fee Rate | Distribution |
 | :--- | :---: | :--- |
-| **Market Order** (Open / Close / Stop / TWAP) | **0.05%** (5 bps) | 70% → Vault (LP Revenue), 30% → Treasury |
-| **Limit Order** | **0.03%** (3 bps) | 70% → Vault (LP Revenue), 30% → Treasury |
+| **Market Order** (Open / Close / Stop / TWAP) | **0.05%** (5 bps) | 70% to Vault (LP Revenue), 30% to Treasury |
+| **Limit Order** | **0.03%** (3 bps) | 70% to Vault (LP Revenue), 30% to Treasury |
 
-- **Borrow Fee:** **0%** — We have completely eliminated daily borrow/rollover fees.
-- **Execution Fee:** A small flat fee in native ARC tokens paid upfront by the trader to compensate the Keeper Bot for gas costs when executing orders on-chain.
+- **Borrow Fee:** **0%** � Daily borrow and rollover fees are not charged.
+- **Execution Fee:** A flat fee paid in native ARC tokens to compensate the Keeper Network for gas costs during transaction settlement.
 
 ---
 
-## ⚖️ On-Chain Max Leverage Tiers & OI Limits
+## Leverage & Open Interest Constraints
 
-As a mathematical safety net for both trader asset sizing and liquidity reserves, maximum leverage limits and open interest (liquidity) limits are strictly hardcoded into the *Smart Contracts*, adjusted according to the volatility class of each asset.
+To maintain systemic stability and protect vault reserves, maximum leverage and open interest (OI) limits are strictly enforced at the smart contract level, categorized by asset volatility.
 
-| Asset Class | Category / Examples | Max Leverage | Max OI / Liquidity Limit (L/S) | Description |
+| Asset Class | Examples | Max Leverage | Max OI Limit (per side) | Description |
 | :--- | :--- | :---: | :---: | :--- |
-| **Tier 1 (Major & Forex)** | Major Crypto (`BTC/USDC`, `ETH/USDC`, `SOL/USDC`), Forex (`EUR/USDC`, `GBP/USDC`, `USDJPY/USDC`) | **100x** | **$10,000,000 ($10M) for Crypto, $5,000,000 ($5M) for Forex** | Supported by the deepest liquidity and highest capacity per side. Ideal for institutional volume and aggressive scalping. |
-| **Tier 2 (Mid)**| Altcoins (`BNB`, `DOGE`, `PEPE`, etc.), Commodities (`GOLD`, `SILVER`) | **50x** | **$5,000,000 ($5M)** | High volatility or gaps. Leverage and open interest capacity are capped to prevent instant liquidations and protect vault reserves. |
-| **Tier 3 (Equities)** | Stock Indices (`SPY`) & Stocks (`AAPL`, `TSLA`, `NVDA`) | **20x** | **$5,000,000 ($5M)** | Traditional market assets with specific trading hours gaps. Strictly capped to 20x leverage. |
+| **Tier 1** | `BTC`, `ETH`, `SOL`, `EUR`, `GBP`, `USDJPY` | **100x** | **$10,000,000 (Crypto), $5,000,000 (Forex)** | Major assets supported by the highest liquidity capacity. |
+| **Tier 2** | `BNB`, `DOGE`, `PEPE`, `GOLD`, `SILVER` | **50x** | **$5,000,000** | Mid-cap and commodity assets with regulated exposure limits. |
+| **Tier 3** | `SPY`, `AAPL`, `TSLA`, `NVDA` | **20x** | **$5,000,000** | Traditional equities bound by market-hour gaps. |
 
 ---
 
-## 🐳 Dynamic Quadratic Price Impact
+## Dynamic Quadratic Price Impact
 
-This feature is our most advanced **Anti-Whale Weapon**.
+To simulate orderbook depth and prevent large individual orders from destabilizing the liquidity pool, the protocol applies a synthetic price impact calculation.
 
-In centralized exchanges, whales damage prices by eating through orderbook depth. At *Confidential DEX*, *Price Impact* is calculated synthetically using a quadratic formula (exponential power of two) based on the trade size ratio against the coin's *Max Open Interest* limit.
+Price impact utilizes a quadratic function based on the trade size relative to the asset's maximum Open Interest limit.
 
-- **Retail Traders:** For small position sizes, the impact is virtually `0.00%`. You won't feel any friction.
-- **Whale Traders:** The larger the order size from a single individual at any given time, the larger the penalty imposed by the smart contract—growing exponentially up to a **Hard Cap of 2.00% (`maxPriceImpactBps = 200`)**. Even for massive orders, your maximum price impact penalty is strictly protected at **2%**. This prevents massive players from selfishly draining the Vault's cash reserves while keeping execution costs predictable.
+- **Retail Execution:** Small position sizes incur nominal to zero price impact.
+- **Large Orders:** As position size increases, the price impact penalty scales quadratically, capped at a maximum of **2.00% (200 bps)**.
 
-### How It Works
+### Calculation Methodology
 
-The system splits your order into two portions based on the current Long/Short OI skew:
+The system evaluates the order against the current Long/Short OI skew:
 
-1. **Balancing Portion:** The portion of your order that helps bring Long and Short OI closer to equilibrium. This portion receives **zero price impact**.
-2. **Overshoot Portion:** The portion that exceeds the OI gap and pushes the skew further. This portion is penalized with the quadratic formula: `impactBps = (overshoot / maxOI)² × 200`.
+1. **Balancing Portion:** The fraction of the order that reduces the gap between Long and Short OI. This portion incurs **zero price impact**.
+2. **Overshoot Portion:** The fraction of the order that extends the OI imbalance. This portion is penalized using the formula: `impactBps = (overshoot / maxOI)� � 200`.
 
-The price impact shifts your entry price unfavorably (higher for longs, lower for shorts), exactly as it would in a real orderbook with limited depth.
+The resulting price impact modifies the entry price (increasing for longs, decreasing for shorts).
 
-::: tip Contrarian Fee Rebate (25% Full-Position Discount)
-We heavily favor traders who help balance the market. If the current majority position is LONG (a Skewed Market), and you place a **SHORT** order (balancing the Skew), the contract automatically rewards you with a **25% Rebate on your entire Trading Fee** — regardless of how much of your order actually fills the gap. As long as you are trading on the minority side, you get the full discount.
-
-Price Impact still applies normally to the overshoot portion of your order, but the fee discount covers your **entire position size**.
+::: info Contrarian Fee Rebate (25% Discount)
+Traders who open positions that counter the prevailing market skew (e.g., opening a Short when the majority is Long) automatically receive a **25% rebate on their total trading fee**. This creates an economic incentive for market equilibrium. The price impact calculation still applies to the overshoot portion, but the fee rebate covers the entire order size.
 :::
 
 ---
 
-## 🌊 Skew-Based P2P Funding Rate
+## Skew-Based P2P Funding Rate
 
-There are no fixed daily Borrow Fees here.
+Instead of fixed daily borrow fees, carrying costs are managed via a continuous peer-to-peer (P2P) funding rate.
 
-Carrying costs are managed exclusively through a **Continuous P2P Funding Rate**. Hourly fees are not calculated based on how much of the vault's funds are utilized, but are assessed purely on the **Ratio Imbalance (Skew)** between the Long and Short masses.
+Funding rates are determined by the ratio imbalance (skew) between aggregate Long and Short open interest. The side with the larger open interest pays the minority side.
 
-**The Absolute Rule:** The Majority must pay the Minority.
-
-*   If 90% of the crowd is Long (Bullish), the Long side will be charged a progressive fee (e.g., `0.0125%` per hour).
-*   100% of these deducted fees from the Long side are instantly streamed as payment into the wallets of the 10% Short side (the Minority).
-*   This mechanism constantly generates **Arbitrage Opportunities**, calling upon large speculators to step in and flatten the directional ratio back to 50:50.
+* If the majority of open interest is Long, Long positions are assessed a progressive hourly fee.
+* 100% of these collected fees are streamed directly to traders holding Short positions.
+* This mechanism continually incentivizes arbitrageurs to balance directional exposure.

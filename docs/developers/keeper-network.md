@@ -1,69 +1,69 @@
-# 🤖 Unified Keeper Network (feederBot V1)
+# Unified Keeper Network (feederBot V1)
 
-Execution, liquidations, and price precision at **Confidential DEX V1** do not rely on a centralized matching engine. Instead, they are fully powered and secured by a permissionless, decentralized army of **Unified Keeper Bots (`feederBot.cjs`)**.
+Execution, liquidations, and price precision at Confidential DEX do not rely on a centralized matching engine. Instead, they are fully powered and secured by a permissionless, decentralized network of Keeper Bots (`feederBot.cjs`).
 
-These bots monitor the network continuously (**every 4 seconds**) to capture user orders, fetch real-time Pyth Oracle VAA proofs, and match or liquidate positions instantly with **checks-effects-interactions (CEI)** and multi-call batch optimizations.
-
----
-
-## Permissionless Nodes (Opportunities for Developers)
-
-Unlike traditional exchanges where internal teams monopolize liquidation and execution revenue, our Keeper Network is **100% Permissionless and Decentralized**:
-- Anyone—including developers, node operators, and traders—can run the Node Keeper script (`feederBot.cjs`) on a personal server or VPS.
-- Keepers compete freely on-chain to execute *Pending Orders* and *Liquidations*, earning direct ARC payouts (`Execution Fee` & `Liquidation Reward`) sent immediately to their wallet (`msg.sender`).
+These bots continuously monitor the network (every 4 seconds) to capture user orders, fetch real-time Pyth Oracle VAA proofs, and execute orders or liquidations instantly utilizing the Checks-Effects-Interactions (CEI) pattern and multicall batch optimizations.
 
 ---
 
-## 💰 Keeper Economy & Fee Scheme
+## Permissionless Node Operation
+
+Unlike traditional exchanges where internal teams monopolize execution revenue, the Keeper Network is entirely permissionless and decentralized:
+- Developers, node operators, and traders can run the Node Keeper script (`feederBot.cjs`) on a personal server or VPS.
+- Keepers compete on-chain to execute pending orders and liquidations, earning direct ARC payouts (Execution Fees and Liquidation Rewards) transferred immediately to the operator's wallet (`msg.sender`).
+
+---
+
+## Keeper Economy & Fee Scheme
 
 The financial incentive structure guarantees immediate on-chain settlement and positive cashflow for Node Operators:
 
 | Operation Cycle | Fee Scheme / Compensation | Borne By |
 | :--- | :--- | :--- |
-| **Market Scanning (Every 4 Sec)** | **0 Gas** (Static RPC & Multicall3 read-only data) | None / Free |
-| **Pending Order Execution** | **100% Execution Fee (0.013 ARC)** | Deposited by **Trader** upfront upon placing an order |
+| **Market Scanning** | **0 Gas** (Static RPC & Multicall3 read-only data) | None / Free |
+| **Pending Order Execution** | **100% Execution Fee (0.013 ARC)** | Deposited by Trader upfront upon placing an order |
 | **Liquidation Execution** | **1% of Trader's Effective Collateral** | Deducted automatically from the liquidated trader's collateral |
 | **TP/SL Execution** | **Uncompensated (0 ARC)** | Gas & Oracle fees fronted by Keeper / Protocol fallback bots |
 
 ::: info Instant On-Chain Payouts
-Whenever your bot successfully executes a pending order (`placeOrder` -> `executeOrder`) or triggers a liquidation (`liquidate`), the contract immediately transfers the `Execution Fee` or `1% Liquidation Reward` directly to your Keeper Wallet (`msg.sender`).
+Whenever your bot successfully executes a pending order (`placeOrder` -> `executeOrder`) or triggers a liquidation (`liquidate`), the smart contract immediately transfers the Execution Fee or 1% Liquidation Reward directly to your Keeper Wallet (`msg.sender`).
 :::
 
 ---
 
-## ⚡ Key Architectural Improvements in V1
+## Key Architectural Features in V1
 
-The latest `feederBot.cjs` (V1 Batch Mode) introduces enterprise-grade resilience and gas optimizations:
+The `feederBot.cjs` (V1 Batch Mode) introduces enterprise-grade resilience and gas optimizations:
 
 ### 1. Multi-Order & All-Type Coverage (Types 0 to 7)
 The Keeper V1 engine natively handles every order type supported by `ConfidentialTradingV1.sol`:
 - **Type 0 (Limit) & Type 1 (Stop):** Executes when oracle price crosses trigger thresholds.
-- **Type 2 (Market Open) & Type 3 (Market Close):** Settles instant market entries and exits with fresh Pyth prices.
+- **Type 2 (Market Open) & Type 3 (Market Close):** Settles instant market entries and exits with real-time Pyth prices.
 - **Type 4 (TWAP):** Executes large orders in timed slices (`twapSlices`). V1 accurately preserves the order in active status until all slices settle (`twapExecuted >= twapSlices`), distributing proportional execution fees per slice without premature deactivation.
 - **Type 5 (Increase Margin/Size):** Executes position additions (`_executeIncrease`) with exact weighted-average entry calculation.
-- **Type 6 (Partial Close):** Closes proportional shares (`closePercentBps`) and releases collateral seamlessly.
+- **Type 6 (Partial Close):** Closes proportional shares (`closePercentBps`) and releases collateral.
 - **Type 7 (Remove Collateral):** Settles margin withdrawal requests while enforcing strict anti-self-liquidation safety bounds (`marginRatio >= 2000`).
 
 ### 2. High-Performance Multicall3 & JSON-RPC Batching
-To eliminate RPC network congestion and latency:
-- **Multicall3 Aggregation (`0xcA11bde0...`):** Queries up to **50 pending orders or positions in a single `aggregate3` call**, cutting RPC read overhead by 98%.
-- **Batched JSON-RPC Fallback:** If `Multicall3` is unavailable on a local or custom chain, V1 automatically downgrades to parallel HTTP `eth_call` batches (`jsonrpc: "2.0"`).
+To minimize RPC network congestion and latency:
+- **Multicall3 Aggregation (`0xcA11bde0...`):** Queries up to 50 pending orders or positions in a single `aggregate3` call, significantly reducing RPC read overhead.
+- **Batched JSON-RPC Fallback:** If Multicall3 is unavailable on a specific chain, V1 automatically downgrades to parallel HTTP `eth_call` batches (`jsonrpc: "2.0"`).
 
-### 3. Smart Arc Network Rate-Limit & Multi-RPC Failover
-High-frequency bots often get throttled (`HTTP 429` / `Too Many Requests`). V1 integrates:
-- **Multi-RPC Failover Pool (`RpcPool`):** Supports multiple fallback RPC endpoints (e.g., Arc DRPC, QuickNode, Blockdaemon). If the primary RPC fails or rate-limits, the bot seamlessly routes calls to the next healthy node without missing a beat.
-- **Adaptive Bucket Cool-downs:** Automatically pauses (`isRpcRateLimitError`) for 4s–6s when all Arc Network RPCs hit rate limits, allowing tokens/buckets to replenish.
-- **Pre-Execution Simulation (`staticCall`):** Simulates every transaction before broadcasting. If an order reverts (`Limit not reached`, `TWAP: too early`), the bot skips gas expenditure.
+### 3. Rate-Limit Protection & Multi-RPC Failover
+To prevent high-frequency bots from being throttled (HTTP 429 errors):
+- **Multi-RPC Failover Pool (`RpcPool`):** Supports multiple fallback RPC endpoints. If the primary RPC fails or rate-limits, the bot seamlessly routes calls to the next healthy node.
+- **Adaptive Bucket Cool-downs:** Automatically pauses for 4s–6s when all RPCs hit rate limits, allowing rate limit buckets to replenish.
+- **Pre-Execution Simulation (`staticCall`):** Simulates every transaction before broadcasting. If an order reverts, the bot skips execution, preserving gas.
 
 ### 4. Gas & Nonce Caching
-- **Memory Gas Cache (`getCachedGasPrice`):** Refreshes network fee data once per minute (`25 Gwei` default) to prevent underpriced transactions during gas spikes.
+- **Memory Gas Cache (`getCachedGasPrice`):** Refreshes network fee data dynamically to prevent underpriced transactions during gas spikes.
 - **Incremental Nonce Tracking (`getNextNonce`):** Manages local nonces cleanly across rapid back-to-back executions, resetting only upon confirmed chain rejections.
 
 ---
 
-## 🚀 How to Run Your Own Keeper Bot (V1)
+## How to Run Your Own Keeper Bot (V1)
 
-### 1. Prerequisites & Server Specs
+### 1. Prerequisites & Server Specifications
 We recommend deploying the bot on a dedicated Linux VPS with high connection stability to the Arc Testnet RPC:
 - **CPU:** 1 vCore (2+ vCores recommended for rapid Multicall parsing)
 - **RAM:** 1 GB–2 GB Minimum

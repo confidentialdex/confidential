@@ -1,12 +1,12 @@
-# 📜 Smart Contracts Architecture & Modules
+# Smart Contracts Architecture & Modules
 
-To ensure maximum transparency and facilitate public audits, this document details the modular smart contract layers that power the **Confidential DEX V1** protocol on the Arc Network.
+To ensure maximum transparency and facilitate public audits, this document details the modular smart contract layers that power the Confidential DEX protocol on the Arc Network.
 
 ---
 
-## 🏗️ Upgradeable Proxy Architecture (`DEXProxy`)
+## Upgradeable Proxy Architecture (`DEXProxy`)
 
-To enable continuous iteration, bug fixes, and feature upgrades without ever compromising existing liquidity or state, **Confidential DEX** adopts the robust **OpenZeppelin Transparent Upgradeable Proxy Pattern**.
+To enable continuous iteration, bug fixes, and feature upgrades without compromising existing liquidity or state, Confidential DEX adopts the OpenZeppelin Transparent Upgradeable Proxy Pattern.
 
 - **`DEXProxy.sol`:** Acts as the persistent proxy layer. User transactions and external calls (like order placement, collateral deposits, and keeper executions) interact exclusively with Proxy addresses. State variables, token balances, and liquidity remain locked within the Proxy contract storage.
 - **`DEXProxyAdmin`:** A centralized governance and admin regulator that isolates upgrade privileges from regular operations. Only authorized admins can point the Proxy to a newly deployed Logic contract.
@@ -15,7 +15,7 @@ This separation guarantees that even when upgraded to new contract versions (e.g
 
 ---
 
-## 🧩 Core Protocol Modules
+## Core Protocol Modules
 
 Our protocol architecture is partitioned into modular, specialized smart contracts that securely interact with each other:
 
@@ -46,7 +46,7 @@ Our protocol architecture is partitioned into modular, specialized smart contrac
 
 ---
 
-## 🔐 Cryptographic Security Layers (Anti-Exploit)
+## Cryptographic Security Layers (Anti-Exploit)
 
 Our contracts are engineered from the ground up to defend against modern DeFi attack vectors:
 
@@ -57,11 +57,11 @@ Our contracts are engineered from the ground up to defend against modern DeFi at
 
 ---
 
-## 🔗 Live Contract Addresses (Arc Testnet)
+## Live Contract Addresses (Arc Testnet)
 
 Below are the primary upgraded smart contract addresses currently active on the Arc Testnet (`Chain ID: 5042002`).
 
-::: tip Integration Note
+::: info Integration Note
 Use these addresses if you wish to build analytics dashboards, quant strategies, keeper network bots, or decentralized extensions on top of Confidential DEX.
 :::
 
@@ -77,4 +77,3 @@ Use these addresses if you wish to build analytics dashboards, quant strategies,
 ---
 
 > Found a bug or interested in deep algorithmic integration? Connect with our development team directly via the official repository at [confidentialdex/confidential](https://github.com/confidentialdex/confidential)!
-

@@ -1,69 +1,62 @@
-# 🏛️ System Architecture
+# System Architecture
 
-The architecture of *Confidential DEX* is built on a modular foundation, revolving around a **Tripartite Core Contract System** that balances high-performance execution (*Keepers*) with decentralized asset security logic (*Smart Contracts*).
+The architecture of Confidential DEX is built on a modular foundation, revolving around a tripartite core contract system. This design balances high-performance execution via the Keeper network with decentralized asset security logic.
 
-While the repository contains **5 Solidity files** in total for implementation and utility purposes, the business logic and protocol state are strictly divided into **3 core smart contract pillars**.
+The protocol separates its business logic and state management into three core smart contract pillars, minimizing gas overhead and codebase complexity.
 
 ---
 
-## 🔗 The Core & Supporting Contracts
+## Core and Supporting Contracts
 
-Below is the breakdown of the 3 tripartite core pillars, followed by the supporting contracts that complete the on-chain architecture.
-
-### The Tripartite Pillars (Core Logic)
-
-These three core smart contract pillars minimize gas overhead, avoid code complexity, and secure user funds:
+### The Tripartite Pillars
 
 | Contract Layer | Primary Role & Function |
 | :--- | :--- |
-| **1. ConfidentialCoreV1.sol** | **(Source of Truth)**<br>The brain of the system. Stores all critical states such as Open Interest (Max OI) limits, Leverage configurations, security caps (Vault Caps), and Circuit Breaker mechanisms. |
-| **2. ConfidentialTradingV1.sol** | **(Execution Engine)**<br>The primary interaction point for Traders. Handles order requests via a 2-step execution model (Request -> Keeper Execution), validates margin sufficiency, leverage, Pyth Oracle prices, and calculates Price Impact penalties before triggering logic within the Vault. |
-| **3. ConfidentialVaultV1.sol** | **(Liquidity Reserve)**<br>Acts like a bank vault. Entirely responsible for securing USDC funds deposited by Liquidity Providers. Processes LP deposits/withdrawals, pays out PnL to traders, and mints LP shares. |
+| **ConfidentialCoreV1.sol** | **(Source of Truth)**<br>Stores critical protocol state variables, including Open Interest (OI) limits, leverage configurations, utilization caps, and circuit breaker mechanisms. |
+| **ConfidentialTradingV1.sol** | **(Execution Engine)**<br>The primary interaction point for traders. Handles order requests via a 2-step execution model, validates margin and oracle prices, and calculates price impact penalties before updating the vault. |
+| **ConfidentialVaultV1.sol** | **(Liquidity Reserve)**<br>Secures USDC funds deposited by Liquidity Providers (LPs). Processes deposits and withdrawals, settles PnL for traders, and manages LP share minting and burning. |
 
-### Supporting Contracts (Integration & Utilities)
+### Supporting Contracts
 
-To support the core engine, the protocol uses two additional contracts in its deployment scope:
+Two additional utility contracts support the core engine:
 
-*   **`PythPriceOracle.sol` (Oracle Adapter):** A modular wrapper for the Pyth Network. It fetches, validates, and serves real-time price feeds to `ConfidentialTradingV1.sol`. By decoupling this from the core engine, the DEX can easily swap or upgrade price oracle providers in the future.
-*   **`ReentrancyGuard.sol` (Security Utility):** A lightweight utility inherited by the core contracts to prevent reentrancy attacks, enforcing the Checks-Effects-Interactions (CEI) design pattern.
+*   **`PythPriceOracle.sol` (Oracle Adapter):** A modular wrapper for the Pyth Network. It fetches, validates, and serves real-time price feeds to `ConfidentialTradingV1.sol`. This decoupling allows for future oracle upgrades without modifying the core execution engine.
+*   **`ReentrancyGuard.sol` (Security Utility):** A lightweight module inherited by the core contracts to prevent reentrancy attacks, enforcing the Checks-Effects-Interactions (CEI) design pattern.
 
 ---
 
-## 🔒 Anti-Exploit Defense Layers
+## Anti-Exploit Defense Layers
 
-Our security system is designed to withstand all types of high-level hacks and network manipulations in DeFi:
+The system incorporates multiple security layers designed to mitigate common DeFi attack vectors:
 
-### 1. 2-Step Request-Execute Model (Anti-MEV & Anti-Exploit)
-::: info Advanced MEV & Toxic Flow Shield
-*Confidential DEX V1* employs a secure **2-Step Request-Execute** model for all orders (Market, Limit, Stop, TWAP, and Close):
-1. **Request (Step 1):** The Trader submits an order request (`placeOrder`) which locks collateral and records the intent on-chain without trusting static/stale prices.
-2. **Execute (Step 2):** The decentralized Unified Keeper Network (`feederBot`) instantly monitors the request, pulls the freshest real-time Pyth Oracle VAA proof, and calls `executeOrder` to settle the trade directly against the Vault. This completely eliminates *Stale Price Arbitrage*, *Sandwich Attacks*, and *Toxic Flow*.
+### 1. 2-Step Request-Execute Model
+::: info Advanced Execution Shield
+Confidential DEX employs a secure 2-step Request-Execute model for all order types:
+1. **Request:** The trader submits an order request (`placeOrder`), locking collateral and recording intent on-chain without executing against static or potentially stale prices.
+2. **Execute:** The decentralized Keeper Network instantly monitors the request, retrieves the freshest real-time Pyth Oracle VAA proof, and calls `executeOrder` to settle the trade. This eliminates stale price arbitrage, sandwich attacks, and toxic order flow.
 :::
 
-### 2. Anti-Flash Loan & 5-Second Cooldown
-::: warning 5-Second Cooldown Period
-Any newly opened position is impossible to close, modify, or tamper with for exactly **5 seconds**. This completely neutralizes *Flash Loan Attacks* and rapid price manipulations within a single block cycle.
+### 2. Anti-Flash Loan Cooldown
+::: info 5-Second Cooldown Period
+Any newly opened position is restricted from being closed or modified for exactly 5 seconds. This neutralizes flash loan attacks and rapid intra-block price manipulations.
 :::
 
 ### 3. Strict CEI (Checks-Effects-Interactions)
-All functions involving the transfer and withdrawal of tokens (USDC) are strictly executed using the CEI design pattern. Balance updates and position statuses must be resolved *before* any physical funds (USDC) are moved, completely closing the door on **Reentrancy Attacks**.
+All functions involving the transfer of USDC adhere strictly to the CEI design pattern. State updates and internal accounting are finalized before any external asset transfers occur, preventing reentrancy vulnerabilities.
 
 ### 4. Pyth Oracle Confidence Check
-During extreme market volatility (such as wars or economic crises), Oracle data ranges risk widening too far. *Confidential DEX* will **reject (revert) trading interactions** if the *Confidence Interval* gap from the *Pyth Network* exceeds the safe threshold of 2%. We prioritize capital preservation over phantom price differences.
+During extreme market volatility, oracle confidence intervals may widen. The protocol automatically reverts trading transactions if the confidence interval gap from the Pyth Network exceeds the 2% threshold, prioritizing capital preservation over inaccurate execution.
 
-### 5. Admin Fat-Finger Protection
-The system does not allow direct, unilateral transfer of administrative rights (Ownership). This process uses a **2-Step Ownership Transfer** mechanism (`transferOwnership` followed by `acceptOwnership` from the new wallet), preventing the permanent loss of contract control due to a typo in the wallet address (Fat-Finger Error).
+### 5. Two-Step Ownership Transfer
+The protocol utilizes a two-step ownership transfer mechanism (`transferOwnership` followed by `acceptOwnership`). This prevents the permanent loss of contract control due to typographical errors during administrative handovers.
 
-### 6. Keeper Bot V1 (Batch Mode) & VPS Integration
-
-To operate the decentralized execution layer, Node Operators run the **feederBot V1 (`feederBot.cjs`)** script on a VPS using PM2. V1 features built-in **Multicall3 batch reading**, **Arc Network rate-limit cooldown protection**, and support for all 8 order types (Limit, Stop, Market Open/Close, TWAP, Increase, Partial Close, Remove Collateral) plus liquidations and TP/SL sweeps.
-
-Ensure you have installed dependencies inside your `contracts/` directory (`npm install`) and configured your `.env` private key.
+### 6. Keeper Bot V1 Integration
+To operate the execution layer, node operators utilize the `feederBot.cjs` script. It features built-in Multicall3 batch reading, rate-limit protection, and support for all order types and liquidations.
 
 ```bash
-# Start or restart your V1 bot in PM2 Daemon mode
+# Start the Keeper Bot in PM2 Daemon mode
 pm2 start feederBot.cjs --name "KeeperBot"
 pm2 logs KeeperBot
 ```
 
-For complete technical specifications, economic tables, and the full 645-line script, see the [Unified Keeper Network (`feederBot.cjs`) Documentation](../developers/keeper-network.md).
+For complete technical specifications, refer to the [Keeper Network Documentation](../developers/keeper-network.md).
