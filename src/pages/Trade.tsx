@@ -305,29 +305,29 @@ export default function Trade() {
               {/* Mobile Stats Expanded */}
               {mobileStatsOpen && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px 8px', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 11 }}>Oracle Price</span>
                     <span className="font-mono" style={{ fontSize: 13, color: 'var(--color-accent)' }}>${fp(activeMarket.price)}</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 11 }}>24h Change</span>
                     <span className="font-mono" style={{ fontSize: 13, color: activeMarket.change24h >= 0 ? 'var(--color-green)' : 'var(--color-red)' }}>
                       {activeMarket.change24h >= 0 ? '+' : ''}{activeMarket.change24h.toFixed(2)}%
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 11 }}>24h Volume</span>
                     <span className="font-mono" style={{ fontSize: 13 }}>${fvCompact(realVolume)}</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 11 }}>1hr Funding</span>
                     <span className="font-mono" style={{ fontSize: 13, color: frColor(hourlyFundingRate) }}>{formatFR(hourlyFundingRate)}</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 11 }}>Open Interest</span>
                     <span className="font-mono" style={{ fontSize: 13 }}>${fvCompact(totalOI)}</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 11 }}>Available Liquidity</span>
                     <span className="font-mono" style={{ fontSize: 13 }}>
                       <span style={{color:'var(--color-green)'}}>${fvCompactNoDecimals(availableLongVal)}</span> / <span style={{color:'var(--color-red)'}}>${fvCompactNoDecimals(availableShortVal)}</span>
