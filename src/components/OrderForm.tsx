@@ -133,20 +133,18 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
   const isCustomLeverage = !leveragePresets.includes(leverage)
   const maxLeverage = leveragePresets[leveragePresets.length - 1]
 
-  const effectivePrice = orderType === 'market' || orderType === 'twap'
+  const initialEffectivePrice = orderType === 'market' || orderType === 'twap'
     ? (activeMarket?.price ?? 0)
     : orderType === 'stop market'
       ? (Number(triggerPrice) || activeMarket?.price || 0)
       : (Number(price) || 0)
   const sizeNum = Number(size) || 0
   
-  const baseSize = inputCurrency === 'BASE' ? sizeNum : (effectivePrice ? sizeNum / effectivePrice : 0)
-  const usdSize = inputCurrency === 'USD' ? sizeNum : (sizeNum * effectivePrice)
+  const initialUsdSize = inputCurrency === 'USD' ? sizeNum : (sizeNum * initialEffectivePrice)
 
   // --- Price Impact & Discount Calculation ---
-  const sizeUsdValue = Number(usdSize) || 0;
+  const sizeUsdValue = Number(initialUsdSize) || 0;
   let priceImpactPct = 0;
-  let priceImpactVal = 0;
   let feeDiscountUsd = 0;
 
   if (sizeUsdValue > 0 && maxOISide > 0) {
@@ -184,16 +182,28 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
       if (rawImpactBps > 200) rawImpactBps = 200; // Cap at max
       
       priceImpactPct = rawImpactBps / 100;
-      priceImpactVal = (overshootSize * priceImpactPct) / 100;
     }
 
-    // 25% Fee Discount for Balancing portion
-    if (isBalancing && balancingSize > 0) {
+    // 25% Fee Discount for traders helping to balance OI skew (applied to entire fee)
+    if (isBalancing) {
       const feeMultiplier = orderType === 'limit' ? 0.0003 : 0.0005;
-      const balancingFee = balancingSize * feeMultiplier;
-      feeDiscountUsd = balancingFee * 0.25; // 25% discount
+      const totalFee = sizeUsdValue * feeMultiplier;
+      feeDiscountUsd = totalFee * 0.25; // 25% discount on full fee
     }
   }
+
+  // Apply Impact to Effective Price
+  let effectivePrice = initialEffectivePrice;
+  if (priceImpactPct > 0) {
+    const impactShift = (initialEffectivePrice * priceImpactPct) / 100;
+    effectivePrice = side === 'long' ? initialEffectivePrice + impactShift : initialEffectivePrice - impactShift;
+  }
+
+  const baseSize = inputCurrency === 'BASE' ? sizeNum : (effectivePrice ? sizeNum / effectivePrice : 0)
+  const usdSize = inputCurrency === 'USD' ? sizeNum : (sizeNum * effectivePrice)
+  
+  // Total Monetary Penalty (Dollar Loss)
+  const priceImpactVal = (usdSize * priceImpactPct) / 100;
 
   const orderSummary = useMemo(() => {
     if (!effectivePrice || !sizeNum) return null

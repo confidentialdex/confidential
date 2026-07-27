@@ -1,15 +1,15 @@
 {
   "version": "V1",
-  "timestamp": "2026-07-26T12:40:45.833Z",
+  "timestamp": "2026-07-27T11:08:45.362Z",
   "network": "Arc Testnet",
   "chainId": 5042002,
   "deployer": "0x1f61FD9AcB266757cb6453F69F6ca41E85Ed880e",
   "treasury": "0x1f61FD9AcB266757cb6453F69F6ca41E85Ed880e",
   "usdcAddress": "0x3600000000000000000000000000000000000000",
   "pythAddress": "0x2880aB155794e7179c9eE2e38200202908C17B43",
-  "oracleAddress": "0x06D2cDcE80b76ef3F0150ff502A3c55E7D9c4F7C",
-  "coreAddress": "0x9acec9Ad24870f95927224FfC5E1c94274492cd8",
-  "vaultAddress": "0x31cabF85147b42184E2d053f0e9c0d60357ea1EC",
-  "tradingAddress": "0xc07368d1dfb34AB43c4c113aA87b656ee5B04634",
+  "oracleAddress": "0x7e8f460ebBAE6A767bC80561c322e3c589a8A3C7",
+  "coreAddress": "0x0026Ceb6a0dB61224a1A94EfDDd3A37C424cF797",
+  "vaultAddress": "0xd0ABFF86ED2493008A2d26C6dA44FE26581f0A79",
+  "tradingAddress": "0xFE7f9dDc814D51d487510BA32BD5F611Af131C20",
   "pairsCount": 23
 }

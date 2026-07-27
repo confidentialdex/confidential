@@ -45,8 +45,8 @@ contract ConfidentialVaultV1 is Initializable, ReentrancyGuard {
     // ── Shared Accounting ──
     mapping(address => uint256) public degenDepositTimestamp;
     mapping(address => uint256) public primeDepositTimestamp;
-    uint256 public degenLockupPeriod = 2 days;
-    uint256 public primeLockupPeriod = 5 days;
+    uint256 public degenLockupPeriod;
+    uint256 public primeLockupPeriod;
     uint256 public totalBacking; 
 
     // ── Caps & Limits ──
@@ -102,11 +102,14 @@ contract ConfidentialVaultV1 is Initializable, ReentrancyGuard {
         trading = _trading;
 
         primeProtectionBps = 2000;
-        maxPrimeDeposits = 1_000_000 * 1e6;
-        maxDegenDeposits = 500_000 * 1e6;
-        maxDepositPerUser = 100_000 * 1e6;
+        maxPrimeDeposits = 35_000_000 * 1e6;
+        maxDegenDeposits = 15_000_000 * 1e6;
+        maxDepositPerUser = 1_000_000 * 1e6;
         depositsEnabled = true;
         withdrawalsEnabled = true;
+        
+        degenLockupPeriod = 2 days;
+        primeLockupPeriod = 5 days;
     }
 
     function setTrading(address _trading) external onlyOwner {

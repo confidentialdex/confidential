@@ -34,7 +34,7 @@ export function useConfidentialTrading() {
     acceptablePriceUsd: number = 0
   ) => {
     try {
-      const fee = sizeUsd * 0.0004
+      const fee = sizeUsd * 0.0005
       const totalRequired = collateralUsd + fee
       
       if (!isApproved(totalRequired)) {
@@ -113,7 +113,7 @@ export function useConfidentialTrading() {
   ) => {
     try {
       const collateralUsd = sizeUsd / leverage
-      const feeRate = orderType === 0 ? 0.0002 : 0.0004
+      const feeRate = orderType === 0 ? 0.0003 : 0.0005
       const totalRequired = collateralUsd + (sizeUsd * feeRate)
       
       if (!isApproved(totalRequired)) {
@@ -169,7 +169,7 @@ export function useConfidentialTrading() {
   ) => {
     try {
       const collateralUsd = totalSizeUsd / leverage
-      const totalRequired = collateralUsd + (totalSizeUsd * 0.0004)
+      const totalRequired = collateralUsd + (totalSizeUsd * 0.0005)
       
       if (!isApproved(totalRequired)) {
         await approveInfinite()
@@ -331,7 +331,7 @@ export function useConfidentialTrading() {
     acceptablePriceUsd: number
   ) => {
     try {
-      const fee = additionalSizeUsd * 0.0004
+      const fee = additionalSizeUsd * 0.0005
       const collateral = additionalSizeUsd / additionalLeverage
       const totalRequired = collateral + fee
       

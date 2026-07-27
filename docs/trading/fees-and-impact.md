@@ -4,6 +4,20 @@ Within this ecosystem, financial equilibrium is structured so that *Liquidity Pr
 
 ---
 
+## 💰 Fee Structure
+
+### Trading Fees
+
+| Order Type | Fee Rate | Distribution |
+| :--- | :---: | :--- |
+| **Market Order** (Open / Close / Stop / TWAP) | **0.05%** (5 bps) | 70% → Vault (LP Revenue), 30% → Treasury |
+| **Limit Order** | **0.03%** (3 bps) | 70% → Vault (LP Revenue), 30% → Treasury |
+
+- **Borrow Fee:** **0%** — We have completely eliminated daily borrow/rollover fees.
+- **Execution Fee:** A small flat fee in native ARC tokens paid upfront by the trader to compensate the Keeper Bot for gas costs when executing orders on-chain.
+
+---
+
 ## ⚖️ On-Chain Max Leverage Tiers & OI Limits
 
 As a mathematical safety net for both trader asset sizing and liquidity reserves, maximum leverage limits and open interest (liquidity) limits are strictly hardcoded into the *Smart Contracts*, adjusted according to the volatility class of each asset.
@@ -25,8 +39,19 @@ In centralized exchanges, whales damage prices by eating through orderbook depth
 - **Retail Traders:** For small position sizes, the impact is virtually `0.00%`. You won't feel any friction.
 - **Whale Traders:** The larger the order size from a single individual at any given time, the larger the penalty imposed by the smart contract—growing exponentially up to a **Hard Cap of 2.00% (`maxPriceImpactBps = 200`)**. Even for massive orders, your maximum price impact penalty is strictly protected at **2%**. This prevents massive players from selfishly draining the Vault's cash reserves while keeping execution costs predictable.
 
-::: tip Skew-Aware Mechanism (Penalty Discount)
-We heavily favor traders who help balance the market. If the current majority position is LONG (a Skewed Market), and you place a massive **SHORT** order (balancing the Skew), the contract automatically rewards you with a **25% Rebate on your Trading Fee** and executes your trade with **Zero Price Impact**.
+### How It Works
+
+The system splits your order into two portions based on the current Long/Short OI skew:
+
+1. **Balancing Portion:** The portion of your order that helps bring Long and Short OI closer to equilibrium. This portion receives **zero price impact**.
+2. **Overshoot Portion:** The portion that exceeds the OI gap and pushes the skew further. This portion is penalized with the quadratic formula: `impactBps = (overshoot / maxOI)² × 200`.
+
+The price impact shifts your entry price unfavorably (higher for longs, lower for shorts), exactly as it would in a real orderbook with limited depth.
+
+::: tip Contrarian Fee Rebate (25% Full-Position Discount)
+We heavily favor traders who help balance the market. If the current majority position is LONG (a Skewed Market), and you place a **SHORT** order (balancing the Skew), the contract automatically rewards you with a **25% Rebate on your entire Trading Fee** — regardless of how much of your order actually fills the gap. As long as you are trading on the minority side, you get the full discount.
+
+Price Impact still applies normally to the overshoot portion of your order, but the fee discount covers your **entire position size**.
 :::
 
 ---

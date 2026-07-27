@@ -64,18 +64,18 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
     mapping(address => uint256[]) public userPositions;
     mapping(address => uint256[]) public userOrders;
 
-    uint256 public rolloverFeePerHour = 0; // 0% per hour (Zero Borrow Fee)
+    uint256 public rolloverFeePerHour; // 0% per hour (Zero Borrow Fee)
     
     // Limits
     uint256 public constant MIN_POSITION_SIZE = 1 * 1e6; // $1 min size
     uint256 public constant MIN_COLLATERAL = 1 * 1e6; // $1 min collateral
 
     // Liquidation reward: 1% of collateral goes to liquidator
-    uint256 public liquidationRewardBps = 100; // 1% in basis points
+    uint256 public liquidationRewardBps;
 
     // Order expiry
-    uint256 public maxOrderAge = 7 days;
-    uint256 public executionBufferBps = 30; // 0.3% buffer for Keeper latency
+    uint256 public maxOrderAge;
+    uint256 public executionBufferBps;
 
     // Duplicate close request prevention
     mapping(uint256 => bool) public hasActiveCloseRequest;
@@ -106,6 +106,11 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
         oracle = PythPriceOracle(_oracle);
         nextOrderId = 1;
         nextPositionId = 1;
+
+        rolloverFeePerHour = 0;
+        liquidationRewardBps = 100;
+        maxOrderAge = 7 days;
+        executionBufferBps = 30;
     }
 
     /// @notice Allow the contract to receive ETH (Arc native tokens) for Pyth Oracle refunds
@@ -444,10 +449,10 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
             entryPrice = order.isLong ? entryPrice + impactVal : entryPrice - impactVal;
         }
 
+        // 25% fee discount for traders helping to balance OI skew (applied to entire fee)
         uint256 discount = 0;
-        if (impact.isBalancing && impact.balancingSize > 0) {
-            uint256 balancingFee = (order.feePaid * impact.balancingSize) / order.sizeUsd;
-            discount = (balancingFee * 2500) / 10000; // 25% discount
+        if (impact.isBalancing) {
+            discount = (order.feePaid * 2500) / 10000; // 25% discount on full fee
         }
 
         uint256 actualFee = order.feePaid - discount;
@@ -908,10 +913,10 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
             addEntryPrice = pos.isLong ? addEntryPrice + impactVal : addEntryPrice - impactVal;
         }
 
+        // 25% fee discount for traders helping to balance OI skew (applied to entire fee)
         uint256 discount = 0;
-        if (impact.isBalancing && impact.balancingSize > 0) {
-            uint256 balancingFee = (fee * impact.balancingSize) / additionalSizeUsd;
-            discount = (balancingFee * 2500) / 10000;
+        if (impact.isBalancing) {
+            discount = (fee * 2500) / 10000; // 25% discount on full fee
         }
 
         uint256 actualFee = fee - discount;

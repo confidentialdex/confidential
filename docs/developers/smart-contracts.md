@@ -23,7 +23,7 @@ Our protocol architecture is partitioned into modular, specialized smart contrac
 *The Central Risk Engine & Parameter Store.*
 - **Open Interest (OI) & Risk Caps:** Manages dynamic long/short Open Interest limits per trading pair (in 6-decimal USDC) to prevent single-market exposure risks. Enforces utilization caps (`utilizationCapBps`) to protect vault liquidity.
 - **Dynamic Funding Rate System:** Implement continuous peer-to-peer funding rates where the majority side (e.g., Longs) pays the minority side (e.g., Shorts) based on OI skew ratio (`(longOI - shortOI) / (longOI + shortOI)`), stabilizing balance naturally.
-- **Fee Routing & Maker/Taker Split:** Calculates dynamic trade impact penalties, maker discounts, and distributes fees precisely between Vault LPs (`vaultFeeBps`) and protocol Treasury (`treasuryFeeBps`).
+- **Fee Routing & Contrarian Rebate:** Distributes trading fees precisely between Vault LPs (70%) and protocol Treasury (30%). Calculates dynamic quadratic price impact penalties based on OI skew, and applies a 25% fee rebate for traders who help balance the Long/Short ratio.
 - **Emergency Controls:** Equipped with timelocks and circuit breakers (`paused` state) to halt operations during systemic network anomalies.
 
 ### 2. Confidential Trading V1 (`ConfidentialTradingV1.sol`)
@@ -67,10 +67,10 @@ Use these addresses if you wish to build analytics dashboards, quant strategies,
 
 | Contract Module | Proxy Address | Description |
 | :--- | :--- | :--- |
-| **Confidential Core V1** | `0x9acec9Ad24870f95927224FfC5E1c94274492cd8` | Protocol brain: Open Interest limits, utilization caps, fees, and funding rate engine. |
-| **Confidential Trading V1** | `0xc07368d1dfb34AB43c4c113aA87b656ee5B04634` | Primary gateway for margin trading, order triggers, TWAP execution, and liquidations. |
-| **Confidential Vault V1** | `0x31cabF85147b42184E2d053f0e9c0d60357ea1EC` | Dual-tranche shared-loss LP pool with ERC-4626 compliant yield & capital floor. |
-| **Pyth Price Oracle** | `0x06D2cDcE80b76ef3F0150ff502A3c55E7D9c4F7C` | Oracle adapter enforcing maximum price staleness and cryptographic validation. |
+| **Confidential Core V1** | `0x0026Ceb6a0dB61224a1A94EfDDd3A37C424cF797` | Protocol brain: Open Interest limits, utilization caps, fees, and funding rate engine. |
+| **Confidential Trading V1** | `0xFE7f9dDc814D51d487510BA32BD5F611Af131C20` | Primary gateway for margin trading, order triggers, TWAP execution, and liquidations. |
+| **Confidential Vault V1** | `0xd0ABFF86ED2493008A2d26C6dA44FE26581f0A79` | Dual-tranche shared-loss LP pool with ERC-4626 compliant yield & capital floor. |
+| **Pyth Price Oracle** | `0x7e8f460ebBAE6A767bC80561c322e3c589a8A3C7` | Oracle adapter enforcing maximum price staleness and cryptographic validation. |
 | **DEX Proxy Admin** | `0x14C52C9Dc2fBFc58429744AE3631Ea6460C16349` | Governance admin contract responsible for safe logic proxy migrations. |
 | **USDC Token (Arc)** | `0x3600000000000000000000000000000000000000` | Native 6-decimal base currency for all collateral deposits and LP stakes. |
 
