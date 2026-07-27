@@ -148,7 +148,6 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
   let feeDiscountUsd = 0;
 
   if (sizeUsdValue > 0 && maxOISide > 0) {
-    let balancingSize = 0;
     let overshootSize = 0;
     let isBalancing = false;
 
@@ -162,15 +161,12 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
         isBalancing = true;
         const gap = side === 'long' ? (shortOIVal - longOIVal) : (longOIVal - shortOIVal);
         if (sizeUsdValue <= gap) {
-          balancingSize = sizeUsdValue;
           overshootSize = 0;
         } else {
-          balancingSize = gap;
           overshootSize = sizeUsdValue - gap;
         }
       } else {
         isBalancing = false;
-        balancingSize = 0;
         overshootSize = sizeUsdValue;
       }
     }
