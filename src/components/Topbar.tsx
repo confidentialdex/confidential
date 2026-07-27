@@ -281,9 +281,41 @@ export default function Topbar() {
               ))}
             </nav>
             <div className="mobile-menu-footer">
+              {isConnected && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 16px', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="topbar-avatar" style={{ width: 24, height: 24 }} />
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span className="font-mono" style={{ fontSize: '14px', color: '#fff' }}>{truncatedAddress}</span>
+                        <span className="font-mono" style={{ fontSize: '12px', color: 'var(--color-green)' }}>{balance.toFixed(2)} USDC</span>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        disconnect();
+                        setIsMobileMenuOpen(false);
+                      }} 
+                      style={{ background: 'rgba(255,59,48,0.1)', border: '1px solid rgba(255,59,48,0.2)', color: 'var(--color-red)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', padding: '6px 12px', borderRadius: '6px' }}
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                  {isPrivyWallet && exportWallet && (
+                    <button
+                      onClick={() => {
+                        exportWallet();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--color-text1)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', padding: '10px', borderRadius: '8px' }}
+                    >
+                      Export Wallet
+                    </button>
+                  )}
+                </div>
+              )}
 
-
-              <div className="mobile-socials" style={{ display: 'flex', gap: '24px', marginTop: '24px', padding: '0 8px', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="mobile-socials" style={{ display: 'flex', gap: '24px', marginTop: '8px', padding: '0 8px', alignItems: 'center', justifyContent: 'center' }}>
                 <a href="https://x.com/Confidentialdex" target="_blank" rel="noreferrer" style={{ color: 'rgba(255,255,255,0.5)', transition: 'color 0.2s' }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
                 </a>
