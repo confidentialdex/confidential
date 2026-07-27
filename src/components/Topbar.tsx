@@ -190,10 +190,10 @@ export default function Topbar() {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                 >
                   <div className="topbar-avatar" />
-                  <span className="font-mono desktop-only" style={{ fontSize: '13px' }}>
+                  <span className="font-mono" style={{ fontSize: '13px' }}>
                     {truncatedAddress}
                   </span>
-                  <svg className="desktop-only" width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: dropdownOpen ? 'rotate(180deg)' : '', transition: 'transform 200ms' }}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: dropdownOpen ? 'rotate(180deg)' : '', transition: 'transform 200ms' }}>
                     <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
                 </button>
