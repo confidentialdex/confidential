@@ -729,16 +729,16 @@ export default function Trade() {
         /* ═══ Mobile (<= 768px) — Hyperliquid Scrollable Layout ═══ */
         @media (max-width: 768px) {
           .trade-layout {
-            padding: 0;
+            padding: 4px 4px 0 4px;
             display: flex;
             flex-direction: column;
-            gap: 0;
+            gap: 4px;
           }
           .trade-center {
-            border-left: none;
-            border-right: none;
-            border-radius: 0;
-            border-top: none;
+            border-left: 1px solid var(--color-border);
+            border-right: 1px solid var(--color-border);
+            border-top: 1px solid var(--color-border);
+            border-radius: 4px;
           }
           .trade-middle-top, .trade-center {
             width: 100%;

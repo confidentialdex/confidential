@@ -121,7 +121,7 @@ export default function Portfolio({ isCompact = false }: { isCompact?: boolean }
   }, [chartTimeframe, chartData])
 
   return (
-    <div className="portfolio-container" style={isCompact ? { padding: '16px 0 0 0' } : {}}>
+    <div className="portfolio-container" style={isCompact ? { padding: '0' } : {}}>
       {isCompact ? (
         <div className="mobile-account-overview-card">
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--color-border)' }}>Account Overview</div>
@@ -359,7 +359,7 @@ export default function Portfolio({ isCompact = false }: { isCompact?: boolean }
         .mobile-account-overview-card {
           background: var(--color-bg1);
           border: 1px solid var(--color-border);
-          border-radius: 8px;
+          border-radius: 4px;
           padding: 16px;
           margin-bottom: 20px;
           display: flex;
@@ -431,7 +431,7 @@ export default function Portfolio({ isCompact = false }: { isCompact?: boolean }
           }
           .portfolio-bottom {
             margin: 0;
-            border-radius: 8px;
+            border-radius: 4px;
             border: 1px solid var(--color-border);
           }
         }
