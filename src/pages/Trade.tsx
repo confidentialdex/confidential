@@ -304,7 +304,7 @@ export default function Trade() {
 
               {/* Mobile Stats Expanded */}
               {mobileStatsOpen && (
-                <div style={{ display: 'grid', gridTemplateColumns: '28% 36% 36%', gap: '10px 8px', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '28% 30% 42%', gap: '10px 8px', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>Oracle Price</span>
                     <span className="font-mono" style={{ fontSize: 9.5, color: 'var(--color-accent)' }}>${fp(activeMarket.price)}</span>
