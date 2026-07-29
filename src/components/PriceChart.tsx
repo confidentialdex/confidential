@@ -201,8 +201,8 @@ export default function PriceChart() {
           alt=""
           draggable={false}
           style={{
-            width: isMobile ? '28px' : '40px',
-            height: isMobile ? '28px' : '40px',
+            width: isMobile ? '18px' : '40px',
+            height: isMobile ? '18px' : '40px',
             borderRadius: '50%',
             objectFit: 'contain',
             filter: 'grayscale(100%) brightness(3)',
@@ -210,7 +210,7 @@ export default function PriceChart() {
         />
         <span
           style={{
-            fontSize: isMobile ? '20px' : '28px',
+            fontSize: isMobile ? '12px' : '28px',
             fontWeight: 600,
             letterSpacing: '3px',
             color: '#FFFFFF',
