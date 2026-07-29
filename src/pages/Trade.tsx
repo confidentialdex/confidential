@@ -325,10 +325,7 @@ export default function Trade() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>
-                      Open Interest{' '}
-                      <span style={{ fontSize: 8, fontWeight: 500, color: 'var(--color-text2)' }}>
-                        (<span style={{ color: 'var(--color-green)' }}>{longPct}%</span>/<span style={{ color: 'var(--color-red)' }}>{shortPct}%</span>)
-                      </span>
+                      Open Interest
                     </span>
                     <span className="font-mono" style={{ fontSize: 9.5, display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
