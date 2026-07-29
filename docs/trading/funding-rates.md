@@ -25,7 +25,7 @@ If the market is heavily Long on BTC:
 - **Longs (Majority):** Will *pay* a funding rate continuously while their position is open.
 - **Shorts (Minority):** Will *receive* a funding rate, meaning they are getting paid to keep their position open!
 
-::: tip Earn While You Sleep
+::: info Earn While You Sleep
 If you notice a heavy skew on the platform, you can open a contrarian position (e.g., Shorting when everyone is Long) and literally get paid funding every second your trade is open.
 :::
 

@@ -898,7 +898,7 @@ BOT_KEEPER_PRIVATE_KEY=your_private_key_here
 ARC_TESTNET_RPC_URL=https://rpc.testnet.arc.io,https://rpc.drpc.testnet.arc.io
 ```
 
-::: warning Private Key Security & Wallet Isolation
+::: info Private Key Security & Wallet Isolation
 Never commit your `.env` file to public repositories or share your private key. Always use a dedicated, isolated wallet specifically loaded with ARC testnet tokens solely for Keeper bot operations.
 :::
 

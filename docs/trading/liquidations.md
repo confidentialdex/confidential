@@ -14,7 +14,7 @@ If your collateral falls below this threshold, your position is flagged for liqu
 Liquidation prices are calculated strictly on-chain using the exact Pyth oracle price.
 If `(Collateral + Unrealized PnL) < Maintenance Margin`, the position is liquidated.
 
-::: warning Keep your Margin Healthy
+::: info Keep your Margin Healthy
 We highly recommend adding collateral or reducing your position size well before your liquidation price is reached. You can do this at any time while the position is open.
 :::
 

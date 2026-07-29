@@ -26,7 +26,7 @@ Confidential DEX heavily rewards traders who help balance the system.
 
 If the market has a heavy Long skew, and you decide to open a Short position (acting as a contrarian), you are actively reducing the protocol's risk. To reward this behavior:
 
-::: tip 25% Fee Discount
+::: info 25% Fee Discount
 Any order that reduces the market skew automatically receives a **25% discount** on the trading fee. Instead of paying 10 bps, you only pay 7.5 bps.
 :::
 

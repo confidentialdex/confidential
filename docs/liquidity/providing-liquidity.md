@@ -31,6 +31,6 @@ To prevent manipulation and sandwich attacks on the Vault's value, all deposits 
 - **Prime Tranche:** 5 Days
 - **Alpha Tranche:** 2 Days
 
-::: warning Weighted Average Lockup
+::: info Weighted Average Lockup
 To prevent arbitrary resets of the lockup period when making subsequent deposits, the system employs a weighted average calculation for deposit timestamps. This ensures large principal amounts are not disproportionately penalized by small additional deposits.
 :::

@@ -30,7 +30,7 @@ We offer a full suite of professional trading tools directly on-chain:
 
 ## Start Exploring
 
-::: tip Ready to Dive In?
+::: info Ready to Dive In?
 Whether you are a trader looking for the best execution, or a liquidity provider looking for sustainable yield, start exploring below.
 :::
 

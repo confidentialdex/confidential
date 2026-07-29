@@ -12,7 +12,7 @@ When a trader decides to open a position (Long or Short), the following sequence
 2. **Keeper Execution:** The order does not execute immediately against a static price. Instead, it enters a pending state. A decentralized Keeper bot instantly observes the request, fetches the most recent cryptographically-signed price from the Pyth Network, and submits it to the blockchain.
 3. **Settlement:** The contract verifies the Pyth signature, checks if the price is within the user's slippage tolerance, calculates the price impact, and officially opens the position.
 
-::: tip Why 2-Step?
+::: info Why 2-Step?
 This model completely eliminates front-running, toxic MEV, and stale-price arbitrage, ensuring you get the fairest execution possible.
 :::
 
