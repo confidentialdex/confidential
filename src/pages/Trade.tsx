@@ -840,6 +840,7 @@ export default function Trade() {
             width: 100%;
             -webkit-overflow-scrolling: touch;
             padding-bottom: 80px; /* Unified bottom spacing */
+            box-sizing: border-box;
           }
           .trade-sidebar {
             display: none;
