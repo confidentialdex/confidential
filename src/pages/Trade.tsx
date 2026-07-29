@@ -841,6 +841,11 @@ export default function Trade() {
             -webkit-overflow-scrolling: touch;
             padding-bottom: 80px; /* Unified bottom spacing */
             box-sizing: border-box;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          .trade-layout::-webkit-scrollbar {
+            display: none;
           }
           .trade-sidebar {
             display: none;
