@@ -306,22 +306,22 @@ export default function Trade() {
               {mobileStatsOpen && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px 8px', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <span style={{ color: 'var(--color-text2)', fontSize: 9 }}>Oracle Price</span>
-                    <span className="font-mono" style={{ fontSize: 11, color: 'var(--color-accent)' }}>${fp(activeMarket.price)}</span>
+                    <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>Oracle Price</span>
+                    <span className="font-mono" style={{ fontSize: 9.5, color: 'var(--color-accent)' }}>${fp(activeMarket.price)}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <span style={{ color: 'var(--color-text2)', fontSize: 9 }}>24h Change</span>
-                    <span className="font-mono" style={{ fontSize: 11, color: activeMarket.change24h >= 0 ? 'var(--color-green)' : 'var(--color-red)' }}>
+                    <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>24h Change</span>
+                    <span className="font-mono" style={{ fontSize: 9.5, color: activeMarket.change24h >= 0 ? 'var(--color-green)' : 'var(--color-red)' }}>
                       {activeMarket.change24h >= 0 ? '+' : ''}{activeMarket.change24h.toFixed(2)}%
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <span style={{ color: 'var(--color-text2)', fontSize: 9 }}>24h Volume</span>
-                    <span className="font-mono" style={{ fontSize: 11 }}>${fvCompact(realVolume)}</span>
+                    <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>24h Volume</span>
+                    <span className="font-mono" style={{ fontSize: 9.5 }}>${fvCompact(realVolume)}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <span style={{ color: 'var(--color-text2)', fontSize: 9 }}>1hr Funding</span>
-                    <span className="font-mono" style={{ fontSize: 11, color: frColor(hourlyFundingRate) }}>{formatFR(hourlyFundingRate)}</span>
+                    <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>1hr Funding</span>
+                    <span className="font-mono" style={{ fontSize: 9.5, color: frColor(hourlyFundingRate) }}>{formatFR(hourlyFundingRate)}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>
