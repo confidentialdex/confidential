@@ -324,22 +324,6 @@ export default function Trade() {
                     <span className="font-mono" style={{ fontSize: 9.5, color: frColor(hourlyFundingRate) }}>{formatFR(hourlyFundingRate)}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>
-                      Open Interest
-                    </span>
-                    <span className="font-mono" style={{ fontSize: 9.5, display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
-                        <span style={{ color: 'var(--color-green)', fontSize: '8px', lineHeight: 1 }}>↗</span>
-                        <span style={{ color: 'var(--color-green)' }}>${fvCompact(longOIVal)}</span>
-                      </span>
-                      <span style={{ color: 'var(--color-text3)', fontSize: '8px' }}>/</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
-                        <span style={{ color: 'var(--color-red)', fontSize: '8px', lineHeight: 1 }}>↘</span>
-                        <span style={{ color: 'var(--color-red)' }}>${fvCompact(shortOIVal)}</span>
-                      </span>
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>Available Liquidity</span>
                     <span className="font-mono" style={{ fontSize: 9.5, display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
@@ -352,6 +336,22 @@ export default function Trade() {
                         <span style={{ color: 'var(--color-red)', fontSize: '8px', lineHeight: 1 }}>↘</span>
                         <span style={{ color: 'var(--color-text2)' }}>:</span>
                         <span style={{ color: 'var(--color-red)' }}>${fvCompactNoDecimals(availableShortVal)}</span>
+                      </span>
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>
+                      Open Interest
+                    </span>
+                    <span className="font-mono" style={{ fontSize: 9.5, display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
+                        <span style={{ color: 'var(--color-green)', fontSize: '8px', lineHeight: 1 }}>↗</span>
+                        <span style={{ color: 'var(--color-green)' }}>${fvCompact(longOIVal)}</span>
+                      </span>
+                      <span style={{ color: 'var(--color-text3)', fontSize: '8px' }}>/</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
+                        <span style={{ color: 'var(--color-red)', fontSize: '8px', lineHeight: 1 }}>↘</span>
+                        <span style={{ color: 'var(--color-red)' }}>${fvCompact(shortOIVal)}</span>
                       </span>
                     </span>
                   </div>
