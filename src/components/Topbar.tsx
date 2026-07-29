@@ -992,7 +992,21 @@ export default function Topbar() {
             display: none !important;
           }
           .topbar-dropdown {
-            width: 200px;
+            width: 180px;
+          }
+          .topbar-dropdown > div {
+            padding: 8px 12px !important;
+          }
+          .topbar-dropdown .label {
+            font-size: 11px;
+            margin-bottom: 2px !important;
+          }
+          .topbar-dropdown .font-mono {
+            font-size: 12px !important;
+          }
+          .topbar-dropdown button.btn-ghost {
+            padding: 6px !important;
+            font-size: 12px !important;
           }
         }
       `}</style>
