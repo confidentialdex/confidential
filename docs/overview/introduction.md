@@ -1,30 +1,39 @@
-# What is Confidential DEX?
+# Welcome to Confidential DEX
 
-**Confidential DEX** is a decentralized perpetual exchange built on the Arc Network, designed for instant execution, deep liquidity, and a zero borrow fee model.
+**Confidential DEX** is a next-generation decentralized perpetual exchange built on the Arc Network. We are building the universal leverage layer for global assets, combining the execution efficiency of centralized exchanges with the self-custodial security of decentralized finance.
 
-It combines the execution efficiency of centralized exchanges with the security and transparency of decentralized finance.
-
-## Core Solutions
-
-### 1. Low Execution Latency
-Many decentralized exchanges rely on slow peer-to-peer orderbooks. Confidential DEX utilizes a Dual-Tranche Vault and a decentralized Keeper Network. Orders are executed via a 2-step Request-Execute model: traders submit requests on-chain, and Keepers execute them securely using current Oracle prices.
-
-### 2. Predictable Slippage
-Slippage often impacts profitability on traditional automated market makers (AMMs). We minimize slippage for standard orders through a price oracle architecture integrated with the Pyth Network. Execution settles against real-time oracle data, reducing the risk of stale-price arbitrage.
-
-### 3. Protection Against Manipulation
-To prevent liquidity drainage and market manipulation, the protocol implements a Dynamic Quadratic Price Impact algorithm. While standard retail orders remain largely unaffected, oversized positions that disrupt the market ratio incur an exponential price penalty.
+Our platform is engineered from the ground up to provide instant execution, deep liquidity, and a revolutionary **Zero Borrow Fee** model.
 
 ---
 
-## Technical Infrastructure
+## Why Confidential?
 
-The platform synchronizes via Goldsky GraphQL and event-driven smart contracts. Automated execution for Take Profit, Stop Loss, and Limit Orders is handled by the Keeper Network without requiring traders to pay manual gas fees for trigger executions.
+Trading on-chain has traditionally been plagued by high latency, exorbitant funding/borrowing costs, and thin liquidity. Confidential DEX solves these problems through our unique architecture:
 
-::: info Zero Borrow Fee
-The protocol eliminates daily borrow fees. Instead, it utilizes a Dynamic Skew-Based Funding Rate, allowing traders to earn fees by taking positions that balance the long/short market ratio.
+### 1. Zero Borrow Fees 📉
+Unlike traditional perpetual DEXs that charge daily borrow fees just for keeping a position open, Confidential DEX eliminates borrow fees entirely. Instead, we utilize a **Dynamic Skew-Based Funding Rate**, allowing traders to actually *earn* fees by taking positions that balance the market's long/short ratio.
+
+### 2. Dual-Tranche Liquidity Vaults 🏦
+Our liquidity is powered by a robust ERC-4626 Dual-Tranche Vault system. This ensures deep, reliable liquidity for traders while offering Liquidity Providers (LPs) tailored risk profiles, complete with a 60% Floor Protection mechanism against sudden market downturns.
+
+### 3. Sub-Second Execution ⚡
+Through our decentralized **Keeper Network** and two-step Request-Execute model, your orders are filled instantly at the exact oracle price, eliminating the front-running and MEV attacks that plague standard AMMs.
+
+### 4. Advanced Order Types 🎯
+We offer a full suite of professional trading tools directly on-chain:
+- Market Orders
+- Limit Orders
+- Take Profit (TP) & Stop Loss (SL)
+- Time-Weighted Average Price (TWAP)
+
+---
+
+## Start Exploring
+
+::: tip Ready to Dive In?
+Whether you are a trader looking for the best execution, or a liquidity provider looking for sustainable yield, start exploring below.
 :::
 
-::: info Contrarian Fee Rebate
-Traders who open positions on the minority side (assisting in rebalancing the long/short skew) automatically receive a 25% discount on their trading fee. Combined with reduced price impact on balancing orders, this incentivizes market equilibrium.
-:::
+- **[Trading Mechanics](/trading/mechanics)**: Learn how to open your first leveraged position.
+- **[Provide Liquidity](/liquidity/providing-liquidity)**: Deposit USDC and start earning real yield.
+- **[Smart Contracts](/developers/smart-contracts)**: Review our security model and architecture.

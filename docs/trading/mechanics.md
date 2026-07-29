@@ -1,37 +1,34 @@
 # Trading Mechanics
 
-Confidential DEX prioritizes institutional-grade execution. All trading mechanisms are designed to ensure fair, precise, and transparent transactions that align with mathematical expectations.
+Confidential DEX prioritizes institutional-grade execution by settling trades directly on-chain using a 2-step Request-Execute model. This section explains the fundamental lifecycle of a position.
 
 ---
 
-## Limit Order Execution
-Unlike systems that apply price tolerances to limit orders to force execution, Confidential DEX enforces strict price accuracy. A limit order will only execute to open a position if the market price from the oracle exactly touches or crosses the target price.
+## 1. Opening a Position
 
-## Dynamic Slippage Buffer
+When a trader decides to open a position (Long or Short), the following sequence occurs:
 
-For the execution of market orders, Stop Loss (SL), and Take Profit (TP), account security and price predictability are prioritized:
+1. **Request Phase:** The user submits a transaction to the `Trading` contract via the frontend. This transaction includes the order details (size, leverage, pair, acceptable slippage) and locks the required USDC collateral.
+2. **Keeper Execution:** The order does not execute immediately against a static price. Instead, it enters a pending state. A decentralized Keeper bot instantly observes the request, fetches the most recent cryptographically-signed price from the Pyth Network, and submits it to the blockchain.
+3. **Settlement:** The contract verifies the Pyth signature, checks if the price is within the user's slippage tolerance, calculates the price impact, and officially opens the position.
 
-::: info Custom Slippage Control
-Traders can define their own custom slippage tolerance via the user interface. The default tolerance is set to 0.3% (30 bps), with a minimum of 0.1% and a maximum of 5%.
-
-If market volatility or extreme wicks push the execution price beyond the defined slippage limit, the keeper network will reject the execution and refund the collateral, protecting traders from highly distorted entry or exit prices.
+::: tip Why 2-Step?
+This model completely eliminates front-running, toxic MEV, and stale-price arbitrage, ensuring you get the fairest execution possible.
 :::
 
----
+## 2. Managing an Open Position
 
-## Position Management
+Once a position is live, its value fluctuates based on the underlying oracle price. 
+- **PnL (Profit and Loss):** Calculated in real-time.
+- **Funding Rates:** Depending on the market skew, you will either pay or receive funding continuously while the position is open. See [Funding Rates](./funding-rates) for details.
+- **Adjustments:** You can add collateral to prevent liquidation or increase your position size (averaging). See [Margin & Leverage](./margin-leverage).
 
-### Partial Close
-Traders maintain full control over risk management with the ability to execute partial closures. Instead of closing 100% of a position, traders can opt to close specific percentages to realize partial profits or limit losses.
+## 3. Closing a Position
 
-- Upon partial close, the smart contract recalculates the remaining collateral and leverage.
-- The realized profit or loss on the closed portion is immediately settled to the wallet or deducted from the collateral.
-- Liquidation thresholds and margin ratios are updated instantaneously.
+Traders can close their positions at any time using a similar Request-Execute flow:
 
-### Averaging Logic
-When a trader adds collateral to an existing position (e.g., adding margin or averaging entry prices), the protocol applies a precise volume-weighted averaging calculation. This ensures the new entry price and combined leverage size are calculated accurately, preventing exploitation of leverage maximums.
+1. **Close Request:** The user submits a close request (either full or partial close).
+2. **Keeper Execution:** The Keeper fetches the latest Pyth price.
+3. **Final Settlement:** The protocol calculates the final PnL, deducts any borrowing/funding fees and close fees, and returns the remaining USDC balance (plus profits or minus losses) back to the user's wallet.
 
----
-
-## TWAP Execution
-For large capital deployments, the system supports Time-Weighted Average Price (TWAP) execution. This algorithm splices large orders into smaller segments executed periodically over a defined timeframe, neutralizing price impact and reducing immediate strain on vault liquidity.
+Alternatively, positions can be closed automatically via Take Profit, Stop Loss, or Liquidations.

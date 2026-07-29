@@ -1,65 +1,49 @@
 # Fees & Price Impact
 
-The financial model of Confidential DEX is designed to ensure sustainable liquidity provision while maintaining transparent execution costs for traders.
+Confidential DEX operates a transparent fee model designed to align the incentives of traders, liquidity providers, and the protocol treasury.
 
 ---
 
-## Fee Structure
+## Trading Fees
 
-### Trading Fees
+When you open or close a position, a flat trading fee is applied based on the total leveraged position size, not just your margin.
 
-| Order Type | Fee Rate | Distribution |
-| :--- | :---: | :--- |
-| **Market Order** (Open / Close / Stop / TWAP) | **0.05%** (5 bps) | 70% to Vault (LP Revenue), 30% to Treasury |
-| **Limit Order** | **0.03%** (3 bps) | 70% to Vault (LP Revenue), 30% to Treasury |
+- **Standard Fee:** `0.1%` (10 bps) of the position size.
 
-- **Borrow Fee:** **0%** — Daily borrow and rollover fees are not charged.
-- **Execution Fee:** A flat fee paid in native ARC tokens to compensate the Keeper Network for gas costs during transaction settlement.
+**Example:**
+If you open a **10x** Long with **1,000 USDC** collateral, your position size is **10,000 USDC**. The trading fee will be `10,000 * 0.001 = 10 USDC`.
+
+### Fee Distribution
+To ensure a sustainable ecosystem, all collected trading fees are split:
+- **70%** goes directly to the Vault (rewarding LPs and growing the liquidity pool).
+- **30%** goes to the Protocol Treasury (for development, keeper rewards, and buybacks).
 
 ---
 
-## Leverage & Open Interest Constraints
+## Contrarian Rebate
 
-To maintain systemic stability and protect vault reserves, maximum leverage and open interest (OI) limits are strictly enforced at the smart contract level, categorized by asset volatility.
+Confidential DEX heavily rewards traders who help balance the system.
 
-| Asset Class | Examples | Max Leverage | Max OI Limit (per side) | Description |
-| :--- | :--- | :---: | :---: | :--- |
-| **Tier 1** | `BTC`, `ETH`, `SOL`, `EUR`, `GBP`, `USDJPY` | **100x** | **$10,000,000 (Crypto), $5,000,000 (Forex)** | Major assets supported by the highest liquidity capacity. |
-| **Tier 2** | `BNB`, `DOGE`, `PEPE`, `GOLD`, `SILVER` | **50x** | **$5,000,000** | Mid-cap and commodity assets with regulated exposure limits. |
-| **Tier 3** | `SPY`, `AAPL`, `TSLA`, `NVDA` | **20x** | **$5,000,000** | Traditional equities bound by market-hour gaps. |
+If the market has a heavy Long skew, and you decide to open a Short position (acting as a contrarian), you are actively reducing the protocol's risk. To reward this behavior:
+
+::: tip 25% Fee Discount
+Any order that reduces the market skew automatically receives a **25% discount** on the trading fee. Instead of paying 10 bps, you only pay 7.5 bps.
+:::
 
 ---
 
 ## Dynamic Quadratic Price Impact
 
-To simulate orderbook depth and prevent large individual orders from destabilizing the liquidity pool, the protocol applies a synthetic price impact calculation.
+In traditional orderbook exchanges, large market orders eat through the liquidity book, resulting in a worse average price (slippage). 
 
-Price impact utilizes a quadratic function based on the trade size relative to the asset's maximum Open Interest limit.
+Because Confidential DEX executes at exactly the oracle price, we simulate this natural market depth using a **Dynamic Quadratic Price Impact** algorithm. This protects the Vault from being drained by massive, one-sided, instantaneous trades.
 
-- **Retail Execution:** Small position sizes incur nominal to zero price impact.
-- **Large Orders:** As position size increases, the price impact penalty scales quadratically, capped at a maximum of **2.00% (200 bps)**.
+### How it Works
+1. **Small Retail Orders:** For standard orders that do not significantly alter the Long/Short skew, the price impact is virtually zero. You get exactly the oracle price.
+2. **Whale Orders:** If you place a massive order that aggressively pushes the skew in one direction (e.g., placing a $5M Long when the market is already heavily Long), the algorithm applies an exponential penalty to your execution price.
 
-### Calculation Methodology
+The formula scales quadratically: the more you imbalance the pool, the worse your execution price becomes.
 
-The system evaluates the order against the current Long/Short OI skew:
-
-1. **Balancing Portion:** The fraction of the order that reduces the gap between Long and Short OI. This portion incurs **zero price impact**.
-2. **Overshoot Portion:** The fraction of the order that extends the OI imbalance. This portion is penalized using the formula: `impactBps = (overshoot / maxOI)² × 200`.
-
-The resulting price impact modifies the entry price (increasing for longs, decreasing for shorts).
-
-::: info Contrarian Fee Rebate (25% Discount)
-Traders who open positions that counter the prevailing market skew (e.g., opening a Short when the majority is Long) automatically receive a **25% rebate on their total trading fee**. This creates an economic incentive for market equilibrium. The price impact calculation still applies to the overshoot portion, but the fee rebate covers the entire order size.
+::: info Mitigation via TWAP
+If you need to deploy large amounts of capital, we strongly recommend using the [TWAP](./order-types#time-weighted-average-price-twap) order type. By slicing your order into smaller chunks over time, you allow the market to naturally digest the volume, significantly reducing or entirely avoiding the price impact penalty.
 :::
-
----
-
-## Skew-Based P2P Funding Rate
-
-Instead of fixed daily borrow fees, carrying costs are managed via a continuous peer-to-peer (P2P) funding rate.
-
-Funding rates are determined by the ratio imbalance (skew) between aggregate Long and Short open interest. The side with the larger open interest pays the minority side.
-
-* If the majority of open interest is Long, Long positions are assessed a progressive hourly fee.
-* 100% of these collected fees are streamed directly to traders holding Short positions.
-* This mechanism continually incentivizes arbitrageurs to balance directional exposure.

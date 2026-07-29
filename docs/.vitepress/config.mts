@@ -14,38 +14,43 @@ export default defineConfig({
       { text: 'Trading', link: '/trading/mechanics' },
       { text: 'Liquidity', link: '/liquidity/dual-vaults' }
     ],
-
     sidebar: [
       {
-        text: '📖 Overview',
+        text: '📖 Introduction',
         collapsed: false,
         items: [
-          { text: 'What is Confidential DEX?', link: '/overview/introduction' },
+          { text: 'Welcome to Confidential', link: '/overview/introduction' },
           { text: 'System Architecture', link: '/overview/architecture' }
         ]
       },
       {
-        text: '📈 Trading',
+        text: '📈 Trade',
         collapsed: false,
         items: [
           { text: 'Trading Mechanics', link: '/trading/mechanics' },
-          { text: 'Fees & Price Impact', link: '/trading/fees-and-impact' }
+          { text: 'Order Types', link: '/trading/order-types' },
+          { text: 'Margin & Leverage', link: '/trading/margin-leverage' },
+          { text: 'Funding Rates', link: '/trading/funding-rates' },
+          { text: 'Fees & Price Impact', link: '/trading/fees-and-impact' },
+          { text: 'Liquidations', link: '/trading/liquidations' }
         ]
       },
       {
-        text: '🏦 Liquidity (Vaults)',
+        text: '🏦 Earn (Liquidity)',
         collapsed: false,
         items: [
           { text: 'Dual-Tranche Vaults', link: '/liquidity/dual-vaults' },
+          { text: 'Providing Liquidity', link: '/liquidity/providing-liquidity' },
           { text: 'Risk & Stability', link: '/liquidity/risk-management' }
         ]
       },
       {
-        text: '💻 Developers',
+        text: '💻 Developers & Security',
         collapsed: false,
         items: [
+          { text: 'Smart Contracts', link: '/developers/smart-contracts' },
           { text: 'Keeper Network', link: '/developers/keeper-network' },
-          { text: 'Smart Contracts', link: '/developers/smart-contracts' }
+          { text: 'Oracles & Pricing', link: '/developers/oracles' }
         ]
       },
       {

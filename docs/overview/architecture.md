@@ -2,19 +2,42 @@
 
 The architecture of Confidential DEX is built on a modular foundation, revolving around a tripartite core contract system. This design balances high-performance execution via the Keeper network with decentralized asset security logic.
 
-The protocol separates its business logic and state management into three core smart contract pillars, minimizing gas overhead and codebase complexity.
+## High-Level Flow
+
+```mermaid
+graph TD
+    User([Trader / Liquidity Provider]) --> Proxy[Transparent Upgradeable Proxy]
+    
+    Proxy -->|Delegatecall| Trading[ConfidentialTradingV1]
+    Proxy -->|Delegatecall| Vault[ConfidentialVaultV1]
+    Proxy -->|Delegatecall| Core[ConfidentialCoreV1]
+    
+    Trading <--> Core
+    Trading <--> Vault
+    
+    Pyth[Pyth Network Oracles] --> Trading
+    Keeper[Keeper Network Bots] --> Trading
+    
+    classDef proxy fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#fff;
+    classDef logic fill:#2980b9,stroke:#2980b9,stroke-width:2px,color:#fff;
+    classDef external fill:#27ae60,stroke:#27ae60,stroke-width:2px,color:#fff;
+    
+    class Proxy proxy;
+    class Trading,Vault,Core logic;
+    class Pyth,Keeper external;
+```
 
 ---
 
-## Core and Supporting Contracts
+## The Tripartite Pillars
 
-### The Tripartite Pillars
+The protocol separates its business logic and state management into three core smart contract pillars, minimizing gas overhead and codebase complexity.
 
 | Contract Layer | Primary Role & Function |
 | :--- | :--- |
-| **ConfidentialCoreV1.sol** | **(Source of Truth)**<br>Stores critical protocol state variables, including Open Interest (OI) limits, leverage configurations, utilization caps, and circuit breaker mechanisms. |
-| **ConfidentialTradingV1.sol** | **(Execution Engine)**<br>The primary interaction point for traders. Handles order requests via a 2-step execution model, validates margin and oracle prices, and calculates price impact penalties before updating the vault. |
-| **ConfidentialVaultV1.sol** | **(Liquidity Reserve)**<br>Secures USDC funds deposited by Liquidity Providers (LPs). Processes deposits and withdrawals, settles PnL for traders, and manages LP share minting and burning. |
+| **ConfidentialCoreV1** | **(Source of Truth)**<br>Stores critical protocol state variables, including Open Interest (OI) limits, leverage configurations, utilization caps, and circuit breaker mechanisms. |
+| **ConfidentialTradingV1** | **(Execution Engine)**<br>The primary interaction point for traders. Handles order requests via a 2-step execution model, validates margin and oracle prices, and calculates price impact penalties before updating the vault. |
+| **ConfidentialVaultV1** | **(Liquidity Reserve)**<br>Secures USDC funds deposited by Liquidity Providers (LPs). Processes deposits and withdrawals, settles PnL for traders, and manages LP share minting and burning. |
 
 ### Supporting Contracts
 
@@ -50,7 +73,10 @@ During extreme market volatility, oracle confidence intervals may widen. The pro
 ### 5. Two-Step Ownership Transfer
 The protocol utilizes a two-step ownership transfer mechanism (`transferOwnership` followed by `acceptOwnership`). This prevents the permanent loss of contract control due to typographical errors during administrative handovers.
 
-### 6. Keeper Bot V1 Integration
+---
+
+## Keeper Bot Integration
+
 To operate the execution layer, node operators utilize the `feederBot.cjs` script. It features built-in Multicall3 batch reading, rate-limit protection, and support for all order types and liquidations.
 
 ```bash
