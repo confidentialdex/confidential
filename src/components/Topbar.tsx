@@ -991,6 +991,9 @@ export default function Topbar() {
           .btn-connect {
             display: none !important;
           }
+          .topbar-dropdown {
+            width: 200px;
+          }
         }
       `}</style>
     </header>
