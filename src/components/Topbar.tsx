@@ -465,8 +465,8 @@ export default function Topbar() {
           right: 0;
           width: 100%;
           z-index: 1100;
-          background-color: #0b0e11;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          background-color: var(--color-bg1);
+          border-bottom: 1px solid var(--color-border);
           height: 56px;
           display: flex;
           align-items: center;
@@ -553,8 +553,8 @@ export default function Topbar() {
         }
         .btn-connect-unified {
           background-color: transparent !important;
-          color: #26c68b !important;
-          border: 1px solid rgba(38, 198, 139, 0.4) !important;
+          color: var(--color-green) !important;
+          border: 1px solid rgba(38, 166, 154, 0.4) !important;
           border-radius: 4px !important;
           font-size: 13px;
           font-weight: 600;
@@ -564,8 +564,8 @@ export default function Topbar() {
           transition: all 150ms;
         }
         .btn-connect-unified:hover {
-          background-color: rgba(38, 198, 139, 0.1) !important;
-          border-color: rgba(38, 198, 139, 0.6) !important;
+          background-color: rgba(38, 166, 154, 0.1) !important;
+          border-color: rgba(38, 166, 154, 0.6) !important;
         }
         .topbar-gas {
           display: flex;

@@ -499,16 +499,16 @@ export default function Vault() {
 
         .vault-bottom-grid { display: grid; grid-template-columns: 400px 1fr; gap: 24px; align-items: start; }
         
-        .border-green { border-color: rgba(46, 189, 133, 0.3); box-shadow: 0 0 30px rgba(46,189,133,0.05); }
+        .border-green { border-color: rgba(38, 166, 154, 0.3); box-shadow: 0 0 30px rgba(38,166,154,0.05); }
         
-        .text-green { color: #2ebd85; }
+        .text-green { color: #26a69a; }
         .text-orange { color: #f97316; }
         .text-blue { color: #60a5fa; }
-        .badge-green { background-color: rgba(46, 189, 133, 0.12); color: #2ebd85; border: 1px solid rgba(46, 189, 133, 0.25); }
+        .badge-green { background-color: rgba(38, 166, 154, 0.12); color: #26a69a; border: 1px solid rgba(38, 166, 154, 0.25); }
         .badge-orange { background-color: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.28); }
         .badge-blue { background-color: rgba(96, 165, 250, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.28); }
-        .btn-green { background-color: #2ebd85; color: #fff; }
-        .btn-green:hover { background-color: #27a675; }
+        .btn-green { background-color: #26a69a; color: #fff; }
+        .btn-green:hover { background-color: #1e9688; }
         
         .action-tabs { display: flex; padding: 14px 16px 0; gap: 8px; }
         .at-btn { flex: 1; padding: 8px 0; background: var(--color-bg2); border: 1px solid var(--color-border); border-radius: var(--radius-lg); color: var(--color-text2); font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.15s; }

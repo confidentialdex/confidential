@@ -83,16 +83,16 @@ export default function PriceChart() {
             "header_screenshot"
           ],
           studies_overrides: {
-            "volume.volume.color.0": "rgba(224, 82, 82, 0.4)",
-            "volume.volume.color.1": "rgba(63, 176, 106, 0.4)"
+            "volume.volume.color.0": "rgba(239, 83, 80, 0.4)",
+            "volume.volume.color.1": "rgba(38, 166, 154, 0.4)"
           },
           overrides: {
-            "mainSeriesProperties.candleStyle.upColor": "#3FB06A",
-            "mainSeriesProperties.candleStyle.downColor": "#E05252",
-            "mainSeriesProperties.candleStyle.borderUpColor": "#3FB06A",
-            "mainSeriesProperties.candleStyle.borderDownColor": "#E05252",
-            "mainSeriesProperties.candleStyle.wickUpColor": "#3FB06A",
-            "mainSeriesProperties.candleStyle.wickDownColor": "#E05252",
+            "mainSeriesProperties.candleStyle.upColor": "#26a69a",
+            "mainSeriesProperties.candleStyle.downColor": "#ef5350",
+            "mainSeriesProperties.candleStyle.borderUpColor": "#26a69a",
+            "mainSeriesProperties.candleStyle.borderDownColor": "#ef5350",
+            "mainSeriesProperties.candleStyle.wickUpColor": "#26a69a",
+            "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350",
             "paneProperties.vertGridProperties.color": "rgba(255, 255, 255, 0)",
             "paneProperties.horzGridProperties.color": "rgba(255, 255, 255, 0.02)",
             "scalesProperties.textColor": "rgba(255, 255, 255, 0.4)",

@@ -180,7 +180,7 @@ export default function Trade() {
               >
                 <div className="chart-stat-item">
                   <span className="chart-stat-label">Oracle Price</span>
-                  <span className="font-mono chart-stat-value" style={{ color: 'var(--color-accent)' }}>{fp(activeMarket.price)}</span>
+                  <span className="font-mono chart-stat-value" style={{ color: 'var(--color-green)' }}>{fp(activeMarket.price)}</span>
                 </div>
                 <div className="chart-stat-item">
                   <span className="chart-stat-label">24h Change</span>
@@ -237,7 +237,7 @@ export default function Trade() {
             </div>
 
             {/* --- MOBILE HEADER --- */}
-            <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', width: '100%', borderBottom: '1px solid var(--color-border)', padding: '12px 16px' }}>
+            <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', width: '100%', borderTop: '4px solid var(--color-border)', borderBottom: '4px solid var(--color-border)', padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                 {/* Left: Pair Info */}
                 <button 
@@ -307,7 +307,7 @@ export default function Trade() {
                 <div style={{ display: 'grid', gridTemplateColumns: '28% 30% 42%', gap: '10px 8px', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>Oracle Price</span>
-                    <span className="font-mono" style={{ fontSize: 9.5, color: 'var(--color-accent)' }}>${fp(activeMarket.price)}</span>
+                    <span className="font-mono" style={{ fontSize: 9.5, color: 'var(--color-green)' }}>${fp(activeMarket.price)}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ color: 'var(--color-text2)', fontSize: 8 }}>24h Change</span>
@@ -573,9 +573,9 @@ export default function Trade() {
           transition: opacity 150ms;
         }
         .action-btn:active { opacity: 0.85; transform: scale(0.98); }
-        .action-buy { background-color: var(--color-green); color: #070c18; text-transform: uppercase; }
+        .action-buy { background-color: var(--color-green); color: #0d1117; text-transform: uppercase; }
         .action-sell { background-color: var(--color-red); color: #fff; text-transform: uppercase; }
-        .action-connect { background-color: var(--color-green); color: #070c18; text-transform: uppercase; font-size: 13px !important; padding: 12px !important; border-radius: 999px !important; width: 100% !important; margin: 0 !important; box-sizing: border-box !important; text-align: center !important; display: flex !important; justify-content: center !important; align-items: center !important; }
+        .action-connect { background-color: var(--color-green); color: #0d1117; text-transform: uppercase; font-size: 13px !important; padding: 12px !important; border-radius: 999px !important; width: 100% !important; margin: 0 !important; box-sizing: border-box !important; text-align: center !important; display: flex !important; justify-content: center !important; align-items: center !important; }
         
         .mobile-nav-btn {
           flex: 1;
@@ -729,16 +729,16 @@ export default function Trade() {
         /* ═══ Mobile (<= 768px) — Hyperliquid Scrollable Layout ═══ */
         @media (max-width: 768px) {
           .trade-layout {
-            padding: 4px 4px 0 4px;
+            padding: 0;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 0;
           }
           .trade-center {
-            border-left: 1px solid var(--color-border);
-            border-right: 1px solid var(--color-border);
-            border-top: 1px solid var(--color-border);
-            border-radius: 4px;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+            border-radius: 0;
           }
           .trade-middle-top, .trade-center {
             width: 100%;
@@ -898,7 +898,7 @@ export default function Trade() {
             width: 100%;
             margin-top: 0;
             box-sizing: border-box;
-            background: rgba(11, 16, 22, 0.98) !important;
+            background: var(--color-bg0) !important;
             backdrop-filter: blur(10px) !important;
             -webkit-backdrop-filter: blur(10px) !important;
             border-top: 1px solid var(--color-border);
@@ -935,7 +935,7 @@ export default function Trade() {
           .mobile-nav-btn.active svg {
             transform: translateY(-2px) scale(1.15);
             filter: drop-shadow(0 4px 6px rgba(255, 255, 255, 0.15));
-            color: var(--color-accent);
+            color: var(--color-green);
           }
           .trade-mobile-tab-view {
             display: flex;

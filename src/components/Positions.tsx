@@ -429,7 +429,7 @@ export default function Positions() {
         }
         .pos-tab.active {
           color: var(--color-text1);
-          border-bottom-color: var(--color-accent);
+          border-bottom-color: var(--color-green);
         }
         .tab-count {
           background: var(--color-bg3);

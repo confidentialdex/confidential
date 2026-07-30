@@ -49,15 +49,15 @@ export default function OrderBook({ hideTabs }: OrderBookProps = {}) {
           <div style={{ padding: 12, textAlign: 'center', color: 'var(--color-text3)', fontSize: 12 }}>No recent trades</div>
         ) : realRecentTrades.map((t) => {
           // Determine color based on trade direction (buying pressure vs selling pressure)
-          let color = '#2ebd85'; // Default green
+          let color = '#26a69a'; // TradingView green
           
           if (t.isLong !== undefined) {
             const isBuyingPressure = 
               (t.isLong && (t.action === 'Open' || t.action === 'Increase')) ||
               (!t.isLong && (t.action === 'Close' || t.action === 'Liquidate' || t.action === 'PartialClose'));
-            color = isBuyingPressure ? '#2ebd85' : '#f6465d';
+            color = isBuyingPressure ? '#26a69a' : '#ef5350';
           } else {
-            color = t.action === 'Open' ? '#2ebd85' : t.action === 'Liquidate' ? '#F7931A' : '#f6465d';
+            color = t.action === 'Open' ? '#26a69a' : t.action === 'Liquidate' ? '#F7931A' : '#ef5350';
           }
           return (
             <div key={t.id} className="ob-row trade-row">
