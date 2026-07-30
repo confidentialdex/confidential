@@ -79,8 +79,8 @@ export function useVaultHistory(userAddress?: string) {
 
     fetchHistory()
     
-    // Poll every 10 seconds
-    const interval = setInterval(() => fetchHistory(true), 10000)
+    // Poll every 30 seconds (backup, primary data comes from contract events)
+    const interval = setInterval(() => fetchHistory(true), 30000)
     return () => clearInterval(interval)
   }, [userAddress])
 
@@ -172,7 +172,7 @@ export function usePositions(userAddress?: string) {
 
   useEffect(() => {
     fetchPositions()
-    const interval = setInterval(() => fetchPositions(true), 3000)
+    const interval = setInterval(() => fetchPositions(true), 15000)
     return () => clearInterval(interval)
   }, [fetchPositions])
 
@@ -239,7 +239,7 @@ export function useClosedPositions(userAddress?: string) {
     }
 
     fetchPositions()
-    const interval = setInterval(() => fetchPositions(true), 15000)
+    const interval = setInterval(() => fetchPositions(true), 30000)
     return () => clearInterval(interval)
   }, [userAddress])
 
@@ -280,7 +280,7 @@ export function useMarketVolumes() {
     }
 
     fetchVolumes()
-    const interval = setInterval(fetchVolumes, 30000)
+    const interval = setInterval(fetchVolumes, 60000)
     return () => clearInterval(interval)
   }, [updateMarketVolume])
 }
@@ -354,7 +354,7 @@ export function useOrders(userAddress?: string) {
     }
 
     fetchOrders()
-    const interval = setInterval(() => fetchOrders(true), 5000)
+    const interval = setInterval(() => fetchOrders(true), 15000)
     return () => clearInterval(interval)
   }, [userAddress])
 
@@ -448,7 +448,7 @@ export function useTradeRecords(userAddress?: string) {
     }
 
     fetchTrades()
-    const interval = setInterval(() => fetchTrades(true), 10000)
+    const interval = setInterval(() => fetchTrades(true), 30000)
     return () => clearInterval(interval)
   }, [userAddress])
 
@@ -520,7 +520,7 @@ export function useGlobalVolume() {
     }
 
     fetchGlobalVolume()
-    const interval = setInterval(fetchGlobalVolume, 15000)
+    const interval = setInterval(fetchGlobalVolume, 60000)
     return () => clearInterval(interval)
   }, [])
 
@@ -555,7 +555,7 @@ export function usePairStats() {
       }
     }
     fetchStats()
-    const interval = setInterval(fetchStats, 10000)
+    const interval = setInterval(fetchStats, 20000)
     return () => clearInterval(interval)
   }, [])
 

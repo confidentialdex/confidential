@@ -1,10 +1,53 @@
 import { useReadContract, useReadContracts } from 'wagmi'
 import { CONTRACTS, ABIS } from '../config/contracts'
 import { formatUnits } from 'viem'
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useEffect, useCallback, useState } from 'react'
+import { subscribeToRefetch } from './useContractEvents'
 
+// ─── Optimistic Position Store ───
+// Shared across hook instances so all consumers see the same optimistic data
+let optimisticPositions: any[] = []
+let optimisticOrders: any[] = []
+const optimisticListeners = new Set<() => void>()
+
+function notifyOptimisticListeners() {
+  optimisticListeners.forEach(fn => fn())
+}
+
+export function addOptimisticPosition(pos: any) {
+  optimisticPositions = [pos, ...optimisticPositions]
+  notifyOptimisticListeners()
+}
+
+export function addOptimisticOrder(order: any) {
+  optimisticOrders = [order, ...optimisticOrders]
+  notifyOptimisticListeners()
+}
+
+export function clearOptimisticPositions() {
+  optimisticPositions = []
+  notifyOptimisticListeners()
+}
+
+export function clearOptimisticOrders() {
+  optimisticOrders = []
+  notifyOptimisticListeners()
+}
+
+function useOptimisticState() {
+  const [, forceUpdate] = useState(0)
+  useEffect(() => {
+    const listener = () => forceUpdate(n => n + 1)
+    optimisticListeners.add(listener)
+    return () => { optimisticListeners.delete(listener) }
+  }, [])
+  return { optimisticPositions, optimisticOrders }
+}
+
+// ─── Positions Hook (Event-Driven) ───
 export function usePositions(address?: string) {
   const lastSuccessRef = useRef<any[]>([])
+  const { optimisticPositions: optPositions } = useOptimisticState()
 
   // 1. Get nextPositionId to know what position IDs exist
   const { data: nextPosIdRaw, refetch: refetchNextId, isLoading: isNextIdLoading } = useReadContract({
@@ -13,7 +56,7 @@ export function usePositions(address?: string) {
     functionName: 'nextPositionId',
     query: {
       enabled: !!address,
-      refetchInterval: 4000,
+      // NO refetchInterval — event-driven only
     }
   })
 
@@ -38,12 +81,12 @@ export function usePositions(address?: string) {
     contracts: detailContracts,
     query: {
       enabled: detailContracts.length > 0,
-      refetchInterval: 4000,
+      // NO refetchInterval — event-driven only
     }
   })
 
   // 3. Parse position details with error preservation
-  const positions = useMemo(() => {
+  const onChainPositions = useMemo(() => {
     if (!positionsData || detailContracts.length === 0) {
       return lastSuccessRef.current
     }
@@ -86,10 +129,41 @@ export function usePositions(address?: string) {
     return parsed.length > 0 ? parsed : lastSuccessRef.current
   }, [positionsData, detailContracts, address])
 
-  const refetchAll = () => {
+  // 4. Merge on-chain + optimistic (filter out optimistic that already appear on-chain)
+  const positions = useMemo(() => {
+    if (optPositions.length === 0) return onChainPositions
+
+    // Filter optimistic positions that match the current user
+    const userOptimistic = optPositions.filter(op =>
+      op.trader?.toLowerCase() === address?.toLowerCase()
+    )
+
+    if (userOptimistic.length === 0) return onChainPositions
+
+    // Remove optimistic entries whose pairId+isLong already exist in on-chain data
+    // (meaning the event already arrived and real data is available)
+    const onChainKeys = new Set(
+      onChainPositions.map((p: any) => `${p.pairId}-${p.isLong}-${p.sizeUsd}`)
+    )
+    const filtered = userOptimistic.filter(op =>
+      !onChainKeys.has(`${op.pairId}-${op.isLong}-${op.sizeUsd}`)
+    )
+
+    return [...filtered, ...onChainPositions]
+  }, [onChainPositions, optPositions, address])
+
+  const refetchAll = useCallback(() => {
+    // Clear optimistic data when real data arrives
+    clearOptimisticPositions()
     refetchNextId()
     refetchDetails()
-  }
+  }, [refetchNextId, refetchDetails])
+
+  // 5. Subscribe to event watcher
+  useEffect(() => {
+    const unsubscribe = subscribeToRefetch('positions-hook', ['positions'], refetchAll)
+    return unsubscribe
+  }, [refetchAll])
 
   return { 
     positions, 
@@ -98,8 +172,10 @@ export function usePositions(address?: string) {
   }
 }
 
+// ─── Orders Hook (Event-Driven) ───
 export function useOrders(address?: string) {
   const lastSuccessRef = useRef<any[]>([])
+  const { optimisticOrders: optOrders } = useOptimisticState()
 
   // 1. Get nextOrderId to know what order IDs exist
   const { data: nextOrderIdRaw, refetch: refetchNextId, isLoading: isNextIdLoading } = useReadContract({
@@ -108,7 +184,7 @@ export function useOrders(address?: string) {
     functionName: 'nextOrderId',
     query: {
       enabled: !!address,
-      refetchInterval: 4000,
+      // NO refetchInterval — event-driven only
     }
   })
 
@@ -133,12 +209,12 @@ export function useOrders(address?: string) {
     contracts: detailContracts,
     query: {
       enabled: detailContracts.length > 0,
-      refetchInterval: 4000,
+      // NO refetchInterval — event-driven only
     }
   })
 
   // 3. Parse order details with error preservation
-  const orders = useMemo(() => {
+  const onChainOrders = useMemo(() => {
     if (!ordersData || detailContracts.length === 0) {
       return lastSuccessRef.current
     }
@@ -184,10 +260,33 @@ export function useOrders(address?: string) {
     return parsed.length > 0 ? parsed : lastSuccessRef.current
   }, [ordersData, detailContracts, address])
 
-  const refetchAll = () => {
+  // 4. Merge on-chain + optimistic orders
+  const orders = useMemo(() => {
+    if (optOrders.length === 0) return onChainOrders
+
+    const userOptimistic = optOrders.filter(oo =>
+      oo.trader?.toLowerCase() === address?.toLowerCase()
+    )
+    if (userOptimistic.length === 0) return onChainOrders
+
+    // Remove optimistic orders that now exist on-chain
+    const onChainIds = new Set(onChainOrders.map((o: any) => o.orderId))
+    const filtered = userOptimistic.filter(oo => !onChainIds.has(oo.orderId))
+
+    return [...filtered, ...onChainOrders]
+  }, [onChainOrders, optOrders, address])
+
+  const refetchAll = useCallback(() => {
+    clearOptimisticOrders()
     refetchNextId()
     refetchDetails()
-  }
+  }, [refetchNextId, refetchDetails])
+
+  // 5. Subscribe to event watcher
+  useEffect(() => {
+    const unsubscribe = subscribeToRefetch('orders-hook', ['orders'], refetchAll)
+    return unsubscribe
+  }, [refetchAll])
 
   return { 
     orders, 
@@ -195,4 +294,3 @@ export function useOrders(address?: string) {
     refetchOrders: refetchAll 
   }
 }
-

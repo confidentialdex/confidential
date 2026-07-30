@@ -1,12 +1,14 @@
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { parseUnits } from 'viem'
+import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
+import { parseUnits, keccak256, toHex } from 'viem'
 import { CONTRACTS, ABIS } from '../config/contracts'
 import toast from 'react-hot-toast'
 import { useUSDCApproval } from './useUSDCApproval'
 import { useTradeStore } from '../store/useTradeStore'
+import { addOptimisticPosition, addOptimisticOrder } from './usePositions'
 
 export function useConfidentialTrading() {
   const { writeContractAsync, data: hash, isPending } = useWriteContract()
+  const { address: walletAddress } = useAccount()
   
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({
     hash,
@@ -44,7 +46,6 @@ export function useConfidentialTrading() {
 
       toast.loading(`⚡ Submitting Market ${isLong ? 'Long' : 'Short'} (${pairName})...`, { id: 'trade' })
 
-      const { keccak256, toHex } = await import('viem')
       const pairId = keccak256(toHex(pairName))
       const sizeUnits = parseUnits(sizeUsd.toFixed(6), 6)
       const tpUnits = tpPriceUsd > 0 ? parseUnits(tpPriceUsd.toFixed(18), 18) : 0n
@@ -70,6 +71,27 @@ export function useConfidentialTrading() {
         ],
         value: EXECUTION_FEE,
       } as any)
+
+      // ── Optimistic Update: inject position immediately ──
+      addOptimisticPosition({
+        id: `optimistic-${Date.now()}`,
+        positionId: `pending`,
+        pairId: pairId,
+        trader: walletAddress || '',
+        isLong,
+        sizeUsd,
+        collateral: collateralUsd,
+        entryPrice: market.price,
+        leverage,
+        liquidationPrice: isLong
+          ? market.price * (1 - 0.9 / leverage)
+          : market.price * (1 + 0.9 / leverage),
+        openedAt: Date.now(),
+        isOpen: true,
+        tpPrice: tpPriceUsd,
+        slPrice: slPriceUsd,
+        _isOptimistic: true,
+      })
 
       toast.success(`✨ Market ${isLong ? 'Long' : 'Short'} Placed (${pairName})`, { id: 'trade' })
       return tx
@@ -123,7 +145,6 @@ export function useConfidentialTrading() {
 
       toast.loading(`⚡ Placing ${orderType === 0 ? 'Limit' : 'Stop'} Order (${pairName})...`, { id: 'order' })
 
-      const { keccak256, toHex } = await import('viem')
       const pairId = keccak256(toHex(pairName))
 
       const sizeUnits = parseUnits(sizeUsd.toFixed(6), 6)
@@ -147,6 +168,23 @@ export function useConfidentialTrading() {
         ],
         value: EXECUTION_FEE,
       } as any)
+
+      // ── Optimistic Update: inject order immediately ──
+      addOptimisticOrder({
+        id: `optimistic-order-${Date.now()}`,
+        orderId: -1, // Will be replaced by real data
+        pairId: pairId,
+        trader: walletAddress || '',
+        isLong,
+        sizeUsd,
+        collateral: collateralUsd,
+        leverage,
+        triggerPrice: triggerPriceUsd,
+        orderType,
+        isActive: true,
+        createdAt: Date.now(),
+        _isOptimistic: true,
+      })
 
       toast.success(`✨ ${orderType === 0 ? 'Limit' : 'Stop'} Order Placed (${pairName})`, { id: 'order' })
       return tx
@@ -178,7 +216,6 @@ export function useConfidentialTrading() {
 
       toast.loading(`⚡ Submitting TWAP Order (${pairName})...`, { id: 'twap' })
 
-      const { keccak256, toHex } = await import('viem')
       const pairId = keccak256(toHex(pairName))
 
       const sizeUnits = parseUnits(totalSizeUsd.toFixed(6), 6)
@@ -233,7 +270,6 @@ export function useConfidentialTrading() {
   const updateTpSl = async (positionId: bigint, tpPriceUsd: number, slPriceUsd: number) => {
     try {
       toast.loading('⚡ Updating TP / SL...', { id: 'updateTpSl' })
-      const { parseUnits } = await import('viem')
       const tpUnits = tpPriceUsd > 0 ? parseUnits(tpPriceUsd.toFixed(18), 18) : 0n
       const slUnits = slPriceUsd > 0 ? parseUnits(slPriceUsd.toFixed(18), 18) : 0n
 
@@ -261,7 +297,6 @@ export function useConfidentialTrading() {
       }
 
       toast.loading(`⚡ Adding Margin ($${amountUsd.toFixed(2)})...`, { id: 'addCol' })
-      const { parseUnits } = await import('viem')
       const amountUnits = parseUnits(amountUsd.toFixed(6), 6)
 
       const tx = await writeContractAsync({
@@ -283,7 +318,6 @@ export function useConfidentialTrading() {
   const removeCollateral = async (positionId: bigint, amountUsd: number) => {
     try {
       toast.loading(`⚡ Submitting Remove Margin ($${amountUsd.toFixed(2)})...`, { id: 'rmCol' })
-      const { parseUnits } = await import('viem')
       const amountUnits = parseUnits(amountUsd.toFixed(6), 6)
 
       const tx = await writeContractAsync({
@@ -342,7 +376,6 @@ export function useConfidentialTrading() {
 
       toast.loading(`⚡ Submitting Position Increase (+$${additionalSizeUsd.toFixed(2)})...`, { id: 'increase' })
       
-      const { parseUnits } = await import('viem')
       const sizeUnits = parseUnits(additionalSizeUsd.toFixed(6), 6)
       const acceptablePriceUnits = acceptablePriceUsd > 0 ? parseUnits(acceptablePriceUsd.toFixed(18), 18) : 0n
 
@@ -376,3 +409,5 @@ export function useConfidentialTrading() {
     isTxPending: isPending || isConfirming || isApproving,
   }
 }
+
+

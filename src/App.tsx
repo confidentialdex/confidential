@@ -8,6 +8,7 @@ import Portfolio from './pages/Portfolio'
 import Home from './pages/Home'
 import { usePythPrices } from './hooks/usePythPrices'
 import { useMarketVolumes } from './hooks/useGoldsky'
+import { useContractEvents } from './hooks/useContractEvents'
 
 function PythPriceLoader() {
   usePythPrices()
@@ -16,6 +17,11 @@ function PythPriceLoader() {
 
 function MarketVolumeLoader() {
   useMarketVolumes()
+  return null
+}
+
+function EventWatcherLoader() {
+  useContractEvents()
   return null
 }
 
@@ -61,6 +67,7 @@ export default function App() {
       <MarketVolumeLoader />
       {/* Only load Pyth prices on non-home pages to prevent trade state interference */}
       {!isHome && <PythPriceLoader />}
+      {!isHome && <EventWatcherLoader />}
       {!isHome && <Topbar />}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingTop: isHome ? 0 : 60 }}>
         <Routes>
