@@ -31,7 +31,7 @@ export default function Positions() {
   }
 
   // Read from smart contract & Goldsky
-  const { positions: activePositions } = usePositions(address || undefined)
+  const { positions: activePositions, isLoading: isPositionsLoading } = usePositions(address || undefined)
   const { cancelOrder } = useConfidentialTrading()
   const { orders: openOrders, isLoading: isOrdersLoading } = useOrders(address || undefined)
   const { trades, isLoading: isTradesLoading } = useTradeRecords(address || undefined)
@@ -115,7 +115,9 @@ export default function Positions() {
                   <span style={{ textAlign: 'center' }}>TP / SL</span>
                   <span style={{ textAlign: 'center' }}>PnL</span>
                 </div>
-                {openPositions.length === 0 ? (
+                {isPositionsLoading ? (
+                  <div className="pos-empty">Loading positions...</div>
+                ) : openPositions.length === 0 ? (
                   <div className="pos-empty">No open positions</div>
                 ) : (
                   openPositions.map((p) => {

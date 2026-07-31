@@ -230,11 +230,7 @@ export function usePositions(address?: string) {
     return unsubscribe
   }, [refetchAll])
 
-  return { 
-    positions, 
-    isLoading: isNextIdLoading || isDetailsLoading, 
-    refetchPositions: refetchAll 
-  }
+  return { positions, refetchPositions: refetchAll, isLoading: isNextIdLoading || isDetailsLoading }
 }
 
 // ─── Orders Hook (Event-Driven) ───
@@ -358,9 +354,5 @@ export function useOrders(address?: string) {
     return unsubscribe
   }, [refetchAll])
 
-  return { 
-    orders, 
-    isLoading: isNextIdLoading || isDetailsLoading, 
-    refetchOrders: refetchAll 
-  }
+  return { orders, refetchOrders: refetchAll, isLoading: isNextIdLoading || isDetailsLoading }
 }
