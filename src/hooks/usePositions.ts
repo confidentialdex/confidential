@@ -1,5 +1,6 @@
 import { useReadContract, useReadContracts } from 'wagmi'
 import { CONTRACTS, ABIS } from '../config/contracts'
+import { arcTestnet } from '../config/chain'
 import { formatUnits } from 'viem'
 import { useMemo, useRef, useEffect, useCallback, useState } from 'react'
 import { subscribeToRefetch } from './useContractEvents'
@@ -117,6 +118,7 @@ export function usePositions(address?: string) {
     address: CONTRACTS.TRADING as any,
     abi: ABIS.TRADING as any,
     functionName: 'nextPositionId',
+    chainId: arcTestnet.id,
   })
 
   // 2. Query the latest 100 position IDs backwards from nextPositionId - 1
@@ -133,6 +135,7 @@ export function usePositions(address?: string) {
       abi: ABIS.TRADING as any,
       functionName: 'positions',
       args: [id],
+      chainId: arcTestnet.id,
     }))
   }, [address, nextPosIdRaw])
 
@@ -243,7 +246,9 @@ export function usePositions(address?: string) {
     return unsubscribe
   }, [refetchAll])
 
-  return { positions, refetchPositions: refetchAll, isLoading: isNextIdLoading || isDetailsLoading }
+  const isLoading = isNextIdLoading || (!!address && detailContracts.length > 0 && (!positionsData || isDetailsLoading))
+
+  return { positions, refetchPositions: refetchAll, isLoading }
 }
 
 // ─── Orders Hook (Event-Driven) ───
@@ -268,6 +273,7 @@ export function useOrders(address?: string) {
     address: CONTRACTS.TRADING as any,
     abi: ABIS.TRADING as any,
     functionName: 'nextOrderId',
+    chainId: arcTestnet.id,
   })
 
   // 2. Query the latest 100 order IDs backwards from nextOrderId - 1
@@ -284,6 +290,7 @@ export function useOrders(address?: string) {
       abi: ABIS.TRADING as any,
       functionName: 'pendingOrders',
       args: [id],
+      chainId: arcTestnet.id,
     }))
   }, [address, nextOrderIdRaw])
 
@@ -380,5 +387,7 @@ export function useOrders(address?: string) {
     return unsubscribe
   }, [refetchAll])
 
-  return { orders, refetchOrders: refetchAll, isLoading: isNextIdLoading || isDetailsLoading }
+  const isLoading = isNextIdLoading || (!!address && detailContracts.length > 0 && (!ordersData || isDetailsLoading))
+
+  return { orders, refetchOrders: refetchAll, isLoading }
 }
