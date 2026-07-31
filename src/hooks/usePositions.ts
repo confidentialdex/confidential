@@ -1,10 +1,12 @@
-import { useReadContract, useReadContracts } from 'wagmi'
+import { useReadContracts } from 'wagmi'
 import { CONTRACTS, ABIS } from '../config/contracts'
 import { arcTestnet } from '../config/chain'
 import { formatUnits } from 'viem'
 import { useMemo, useRef, useEffect, useCallback, useState } from 'react'
 import { subscribeToRefetch } from './useContractEvents'
-
+import { useQuery } from '@tanstack/react-query'
+import { gql } from 'graphql-request'
+import { gqlClient } from '../config/graphql'
 // ─── Optimistic Position Store ───
 // Shared across hook instances so all consumers see the same optimistic data
 let optimisticPositions: any[] = []
@@ -113,31 +115,39 @@ export function usePositions(address?: string) {
     }
   }, [address])
 
-  // 1. Get nextPositionId to know what position IDs exist (no address dependency, fetches immediately)
-  const { data: nextPosIdRaw, refetch: refetchNextId, isLoading: isNextIdLoading } = useReadContract({
-    address: CONTRACTS.TRADING as any,
-    abi: ABIS.TRADING as any,
-    functionName: 'nextPositionId',
-    chainId: arcTestnet.id,
+  // 1. Get user's active position IDs from Goldsky Subgraph
+  const { data: goldskyPosIds, refetch: refetchGoldskyIds, isLoading: isGoldskyLoading } = useQuery({
+    queryKey: ['goldskyActivePositions', address],
+    queryFn: async () => {
+      if (!address) return []
+      const query = gql`
+        query GetUserActivePositions($user: Bytes!) {
+          positions(where: { trader: $user, isOpen: true }) {
+            positionId
+          }
+        }
+      `
+      const data: any = await gqlClient.request(query, { user: address.toLowerCase() })
+      return data.positions.map((p: any) => BigInt(p.positionId))
+    },
+    enabled: !!address,
   })
 
-  // 2. Query the latest 100 position IDs backwards from nextPositionId - 1
+  // 2. Query only the specific active position IDs
   const detailContracts = useMemo(() => {
-    if (!address || !nextPosIdRaw) return []
-    const nextId = Number(nextPosIdRaw)
-    const count = Math.min(nextId - 1, 100) // Check latest 100 positions
-    const ids: bigint[] = []
-    for (let i = nextId - 1; i >= nextId - count; i--) {
-      if (i >= 1) ids.push(BigInt(i))
-    }
-    return ids.map((id) => ({
+    if (!address || !goldskyPosIds) return []
+    
+    // Create a Set to ensure unique IDs (and later we can inject any unindexed numeric optimistic IDs here if needed)
+    const ids = new Set<bigint>(goldskyPosIds)
+    
+    return Array.from(ids).map((id) => ({
       address: CONTRACTS.TRADING as any,
       abi: ABIS.TRADING as any,
       functionName: 'positions',
       args: [id],
       chainId: arcTestnet.id,
     }))
-  }, [address, nextPosIdRaw])
+  }, [address, goldskyPosIds])
 
   const { data: positionsData, refetch: refetchDetails, isLoading: isDetailsLoading } = useReadContracts({
     contracts: detailContracts,
@@ -246,20 +256,19 @@ export function usePositions(address?: string) {
     return [...filtered, ...base]
   }, [onChainPositions, optPositions, optUpdates, optRemovals, address])
 
-  // Bug #1 Fix: refetchAll no longer clears optimistic state prematurely
-  // Clearing now happens inside onChainPositions useMemo after real data arrives
+  const isLoading = (!address) ? false : (isGoldskyLoading || isDetailsLoading)
+
+  // 5. Setup event-driven refetch
   const refetchAll = useCallback(() => {
-    refetchNextId()
+    refetchGoldskyIds()
     refetchDetails()
-  }, [refetchNextId, refetchDetails])
+  }, [refetchGoldskyIds, refetchDetails])
 
   // 5. Subscribe to event watcher
   useEffect(() => {
     const unsubscribe = subscribeToRefetch('positions-hook', ['positions'], refetchAll)
     return unsubscribe
   }, [refetchAll])
-
-  const isLoading = isNextIdLoading || (!!address && detailContracts.length > 0 && (!positionsData || isDetailsLoading || positionsData.some((r: any) => r.status === 'pending')))
 
   return { positions, refetchPositions: refetchAll, isLoading }
 }
@@ -281,31 +290,39 @@ export function useOrders(address?: string) {
     }
   }, [address])
 
-  // 1. Get nextOrderId to know what order IDs exist
-  const { data: nextOrderIdRaw, refetch: refetchNextId, isLoading: isNextIdLoading } = useReadContract({
-    address: CONTRACTS.TRADING as any,
-    abi: ABIS.TRADING as any,
-    functionName: 'nextOrderId',
-    chainId: arcTestnet.id,
+  // 1. Get user's active order IDs from Goldsky Subgraph
+  const { data: goldskyOrderIds, refetch: refetchGoldskyIds, isLoading: isGoldskyLoading } = useQuery({
+    queryKey: ['goldskyActiveOrders', address],
+    queryFn: async () => {
+      if (!address) return []
+      const query = gql`
+        query GetUserActiveOrders($user: Bytes!) {
+          orders(where: { trader: $user, isActive: true }) {
+            orderId
+          }
+        }
+      `
+      const data: any = await gqlClient.request(query, { user: address.toLowerCase() })
+      return data.orders.map((o: any) => BigInt(o.orderId))
+    },
+    enabled: !!address,
   })
 
-  // 2. Query the latest 100 order IDs backwards from nextOrderId - 1
+  // 2. Query only the specific active order IDs
   const detailContracts = useMemo(() => {
-    if (!address || !nextOrderIdRaw) return []
-    const nextId = Number(nextOrderIdRaw)
-    const count = Math.min(nextId - 1, 100) // Check latest 100 orders
-    const ids: bigint[] = []
-    for (let i = nextId - 1; i >= nextId - count; i--) {
-      if (i >= 1) ids.push(BigInt(i))
-    }
-    return ids.map((id) => ({
+    if (!address || !goldskyOrderIds) return []
+    
+    // Create a Set to ensure unique IDs
+    const ids = new Set<bigint>(goldskyOrderIds)
+    
+    return Array.from(ids).map((id) => ({
       address: CONTRACTS.TRADING as any,
       abi: ABIS.TRADING as any,
       functionName: 'pendingOrders',
       args: [id],
       chainId: arcTestnet.id,
     }))
-  }, [address, nextOrderIdRaw])
+  }, [address, goldskyOrderIds])
 
   const { data: ordersData, refetch: refetchDetails, isLoading: isDetailsLoading } = useReadContracts({
     contracts: detailContracts,
@@ -406,9 +423,9 @@ export function useOrders(address?: string) {
 
   // Bug #1 Fix: refetchAll no longer clears optimistic state prematurely
   const refetchAll = useCallback(() => {
-    refetchNextId()
+    refetchGoldskyIds()
     refetchDetails()
-  }, [refetchNextId, refetchDetails])
+  }, [refetchGoldskyIds, refetchDetails])
 
   // 5. Subscribe to event watcher
   useEffect(() => {
@@ -416,7 +433,7 @@ export function useOrders(address?: string) {
     return unsubscribe
   }, [refetchAll])
 
-  const isLoading = isNextIdLoading || (!!address && detailContracts.length > 0 && (!ordersData || isDetailsLoading || ordersData.some((r: any) => r.status === 'pending')))
+  const isLoading = isGoldskyLoading || (!!address && detailContracts.length > 0 && (!ordersData || isDetailsLoading || ordersData.some((r: any) => r.status === 'pending')))
 
   return { orders, refetchOrders: refetchAll, isLoading }
 }

@@ -68,6 +68,7 @@ export function useContractEvents() {
       if (relevant) {
         console.log('[EventWatcher] PositionOpened detected')
         notifySubscribers(['positions', 'orders'])
+        setTimeout(() => notifySubscribers(['positions', 'orders']), 5000)
       }
     },
     poll: true,
@@ -85,6 +86,7 @@ export function useContractEvents() {
       if (relevant) {
         console.log('[EventWatcher] PositionClosed detected')
         notifySubscribers(['positions', 'closedPositions', 'trades'])
+        setTimeout(() => notifySubscribers(['positions', 'closedPositions', 'trades']), 5000)
       }
     },
     poll: true,
@@ -102,6 +104,7 @@ export function useContractEvents() {
       if (relevant) {
         console.log('[EventWatcher] PositionLiquidated detected')
         notifySubscribers(['positions', 'closedPositions', 'trades'])
+        setTimeout(() => notifySubscribers(['positions', 'closedPositions', 'trades']), 5000)
       }
     },
     poll: true,
@@ -119,6 +122,7 @@ export function useContractEvents() {
       if (relevant) {
         console.log('[EventWatcher] PositionIncreased detected')
         notifySubscribers(['positions'])
+        setTimeout(() => notifySubscribers(['positions']), 5000)
       }
     },
     poll: true,
@@ -136,6 +140,7 @@ export function useContractEvents() {
       if (relevant) {
         console.log('[EventWatcher] PositionPartialClose detected')
         notifySubscribers(['positions', 'trades'])
+        setTimeout(() => notifySubscribers(['positions', 'trades']), 5000)
       }
     },
     poll: true,
@@ -154,6 +159,7 @@ export function useContractEvents() {
       if (relevant) {
         console.log('[EventWatcher] CollateralAdded detected')
         notifySubscribers(['positions'])
+        setTimeout(() => notifySubscribers(['positions']), 5000)
       }
     },
     poll: true,
@@ -171,6 +177,7 @@ export function useContractEvents() {
       if (relevant) {
         console.log('[EventWatcher] CollateralRemoved detected')
         notifySubscribers(['positions'])
+        setTimeout(() => notifySubscribers(['positions']), 5000)
       }
     },
     poll: true,
@@ -189,6 +196,7 @@ export function useContractEvents() {
       if (relevant) {
         console.log('[EventWatcher] OrderPlaced detected')
         notifySubscribers(['orders'])
+        setTimeout(() => notifySubscribers(['orders']), 5000)
       }
     },
     poll: true,
@@ -202,6 +210,7 @@ export function useContractEvents() {
     onLogs() {
       console.log('[EventWatcher] OrderExecuted detected')
       notifySubscribers(['positions', 'orders'])
+      setTimeout(() => notifySubscribers(['positions', 'orders']), 5000)
     },
     poll: true,
     pollingInterval: 2_000,
@@ -214,6 +223,7 @@ export function useContractEvents() {
     onLogs() {
       console.log('[EventWatcher] OrderCancelled detected')
       notifySubscribers(['orders'])
+      setTimeout(() => notifySubscribers(['orders']), 5000)
     },
     poll: true,
     pollingInterval: 2_000,
@@ -227,6 +237,7 @@ export function useContractEvents() {
     onLogs() {
       console.log('[EventWatcher] TPSLTriggered detected')
       notifySubscribers(['positions', 'closedPositions', 'trades'])
+      setTimeout(() => notifySubscribers(['positions', 'closedPositions', 'trades']), 5000)
     },
     poll: true,
     pollingInterval: 2_000,
