@@ -877,11 +877,31 @@ async function main() {
     }
   }
 
-  // Run every 4 seconds for faster order execution
-  const INTERVAL = 4000;
-  console.log(`🟢 Bot v1 running. Polling every ${INTERVAL / 1000}s...\n`);
+  // ─── HYBRID TRIGGER (WSS + Polling) ───
+  const INTERVAL = 4000; // Polling backup tiap 4 detik (Sesuai request)
+  console.log(`🟢 Bot v1 running. Polling backup every ${INTERVAL / 1000}s...\n`);
+  
+  // 1. Polling Backup (Garbage Collector)
   setInterval(scanAndExecute, INTERVAL);
   scanAndExecute();
+
+  // 2. WSS Event Listener (Eksekusi Instan)
+  try {
+    const wssProvider = new ethers.WebSocketProvider("wss://rpc.testnet.arc.io");
+    const wssContract = new ethers.Contract(TRADING_ADDRESS, tradingAbi, wssProvider);
+    
+    wssContract.on("OrderCreated", () => {
+      console.log("⚡ [WSS] OrderCreated terdeteksi! Memaksa scan...");
+      scanAndExecute();
+    });
+    
+    wssContract.on("ClosePositionRequested", () => {
+      console.log("⚡ [WSS] ClosePositionRequested terdeteksi! Memaksa scan...");
+      scanAndExecute();
+    });
+  } catch (err) {
+    console.log("⚠️ WSS Listener gagal connect, bot tetap aman berjalan via Polling:", err.message);
+  }
 }
 
 main().catch(console.error);

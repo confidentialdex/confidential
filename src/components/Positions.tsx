@@ -117,7 +117,7 @@ export default function Positions() {
                   <span style={{ textAlign: 'center' }}>TP / SL</span>
                   <span style={{ textAlign: 'center' }}>PnL</span>
                 </div>
-                {isPositionsLoading ? (
+                {isPositionsLoading && openPositions.length === 0 ? (
                   <div className="pos-empty">Loading positions...</div>
                 ) : openPositions.length === 0 ? (
                   <div className="pos-empty">No open positions</div>
@@ -260,8 +260,8 @@ export default function Positions() {
                   <span style={{ textAlign: 'center' }}>Filled</span>
                   <span style={{ textAlign: 'center' }}>Action</span>
                 </div>
-                {isOrdersLoading ? (
-                  <div className="pos-empty">Loading orders from Goldsky...</div>
+                {isOrdersLoading && displayOrders.length === 0 ? (
+                  <div className="pos-empty">Loading orders...</div>
                 ) : displayOrders.length === 0 ? (
                   <div className="pos-empty">No open orders</div>
                 ) : (
@@ -326,10 +326,10 @@ export default function Positions() {
                   <span style={{ textAlign: 'center' }}>Net PnL</span>
                   <span style={{ textAlign: 'center' }}>Tx Hash</span>
                 </div>
-                {isTradesLoading ? (
-                  <div className="pos-empty">Loading activity from Goldsky...</div>
+                {isTradesLoading && trades.length === 0 ? (
+                  <div className="pos-empty">Loading trades...</div>
                 ) : trades.length === 0 ? (
-                  <div className="pos-empty">No trade activity</div>
+                  <div className="pos-empty">No trade history</div>
                 ) : (
                   trades.map((t) => {
                     const matchedMarket = markets.find(m => keccak256(toHex(m.pair)) === t.pairId)
