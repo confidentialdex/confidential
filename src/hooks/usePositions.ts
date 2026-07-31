@@ -97,11 +97,20 @@ function useOptimisticState() {
 // ─── Positions Hook (Event-Driven) ───
 export function usePositions(address?: string) {
   const lastSuccessRef = useRef<any[]>([])
+  const lastAddressRef = useRef<string | undefined>(undefined)
   const { 
     optimisticPositions: optPositions,
     optimisticPositionUpdates: optUpdates,
     optimisticPositionRemovals: optRemovals
   } = useOptimisticState()
+
+  // Bug #2 Fix: Reset lastSuccessRef when address changes
+  useEffect(() => {
+    if (lastAddressRef.current !== address) {
+      lastSuccessRef.current = []
+      lastAddressRef.current = address
+    }
+  }, [address])
 
   // 1. Get nextPositionId to know what position IDs exist (no address dependency, fetches immediately)
   const { data: nextPosIdRaw, refetch: refetchNextId, isLoading: isNextIdLoading } = useReadContract({
@@ -137,7 +146,11 @@ export function usePositions(address?: string) {
 
   // 3. Parse position details with error preservation
   const onChainPositions = useMemo(() => {
-    if (!positionsData || detailContracts.length === 0) {
+    // Bug #3 Fix: Return empty array (not stale data) when no contracts to query
+    if (detailContracts.length === 0) {
+      return lastSuccessRef.current.length > 0 ? lastSuccessRef.current : []
+    }
+    if (!positionsData) {
       return lastSuccessRef.current
     }
     
@@ -174,6 +187,10 @@ export function usePositions(address?: string) {
     const allSuccess = positionsData && positionsData.every((r: any) => r.status === 'success')
     if (parsed.length > 0 || allSuccess) {
       lastSuccessRef.current = parsed
+      // Bug #1 Fix: Clear optimistic data AFTER real on-chain data has arrived
+      // This prevents the "ghost position" flash where optimistic removals are cleared
+      // before new RPC data is ready
+      clearOptimisticPositions()
     }
 
     return parsed.length > 0 ? parsed : lastSuccessRef.current
@@ -217,9 +234,9 @@ export function usePositions(address?: string) {
     return [...filtered, ...base]
   }, [onChainPositions, optPositions, optUpdates, optRemovals, address])
 
+  // Bug #1 Fix: refetchAll no longer clears optimistic state prematurely
+  // Clearing now happens inside onChainPositions useMemo after real data arrives
   const refetchAll = useCallback(() => {
-    // Clear optimistic data when real data arrives
-    clearOptimisticPositions()
     refetchNextId()
     refetchDetails()
   }, [refetchNextId, refetchDetails])
@@ -236,10 +253,19 @@ export function usePositions(address?: string) {
 // ─── Orders Hook (Event-Driven) ───
 export function useOrders(address?: string) {
   const lastSuccessRef = useRef<any[]>([])
+  const lastAddressRef = useRef<string | undefined>(undefined)
   const { 
     optimisticOrders: optOrders,
     optimisticOrderRemovals: optRemovals
   } = useOptimisticState()
+
+  // Bug #2 Fix: Reset lastSuccessRef when address changes
+  useEffect(() => {
+    if (lastAddressRef.current !== address) {
+      lastSuccessRef.current = []
+      lastAddressRef.current = address
+    }
+  }, [address])
 
   // 1. Get nextOrderId to know what order IDs exist
   const { data: nextOrderIdRaw, refetch: refetchNextId, isLoading: isNextIdLoading } = useReadContract({
@@ -275,7 +301,11 @@ export function useOrders(address?: string) {
 
   // 3. Parse order details with error preservation
   const onChainOrders = useMemo(() => {
-    if (!ordersData || detailContracts.length === 0) {
+    // Bug #3 Fix: Return empty array when no contracts to query
+    if (detailContracts.length === 0) {
+      return lastSuccessRef.current.length > 0 ? lastSuccessRef.current : []
+    }
+    if (!ordersData) {
       return lastSuccessRef.current
     }
     
@@ -315,6 +345,8 @@ export function useOrders(address?: string) {
     const allSuccess = ordersData && ordersData.every((r: any) => r.status === 'success')
     if (parsed.length > 0 || allSuccess) {
       lastSuccessRef.current = parsed
+      // Bug #1 Fix: Clear optimistic data AFTER real on-chain data has arrived
+      clearOptimisticOrders()
     }
 
     return parsed.length > 0 ? parsed : lastSuccessRef.current
@@ -342,8 +374,8 @@ export function useOrders(address?: string) {
     return [...filtered, ...base]
   }, [onChainOrders, optOrders, optRemovals, address])
 
+  // Bug #1 Fix: refetchAll no longer clears optimistic state prematurely
   const refetchAll = useCallback(() => {
-    clearOptimisticOrders()
     refetchNextId()
     refetchDetails()
   }, [refetchNextId, refetchDetails])
