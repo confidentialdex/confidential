@@ -16,7 +16,7 @@ type Tab = 'balances' | 'positions' | 'orders' | 'trades'
 
 export default function Positions() {
   const { markets } = useTradeStore()
-  const { isConnected, balance, address } = useArcWallet()
+  const { isConnected, balance, address, isInitializing } = useArcWallet()
   const [tab, setTab] = useState<Tab>('positions')
   const [selectedShare, setSelectedShare] = useState<SharePositionData | null>(null)
   const [selectedEditTpSl, setSelectedEditTpSl] = useState<EditTpSlData | null>(null)
@@ -100,7 +100,9 @@ export default function Positions() {
           </div>
         ) : tab === 'positions' ? (
           <div className="pos-table-wrapper">
-            {!isConnected ? (
+            {isInitializing ? (
+              <div className="pos-empty">Restoring session...</div>
+            ) : !isConnected ? (
               <div className="pos-empty">Please connect wallet to view positions</div>
             ) : (
               <>
@@ -241,7 +243,9 @@ export default function Positions() {
           </div>
         ) : tab === 'orders' ? (
           <div className="pos-table-wrapper">
-            {!isConnected ? (
+            {isInitializing ? (
+              <div className="pos-empty">Restoring session...</div>
+            ) : !isConnected ? (
               <div className="pos-empty">Please connect wallet to view open orders</div>
             ) : (
               <>

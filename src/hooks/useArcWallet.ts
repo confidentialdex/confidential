@@ -10,13 +10,14 @@ export function useArcWallet() {
   const { address: wagmiAddress, isConnected: wagmiConnected, chainId } = useAccount()
   const { disconnect: wagmiDisconnect } = useDisconnect()
   const { switchChain } = useSwitchChain()
-  const { authenticated, user, logout: privyLogout, login, exportWallet } = usePrivy()
+  const { authenticated, user, logout: privyLogout, login, exportWallet, ready } = usePrivy()
 
 
   const privyAddress = user?.wallet?.address
   const privyEmail = user?.email?.address
   const address = wagmiAddress || privyAddress
   const isConnected = wagmiConnected || authenticated
+  const isInitializing = !ready || (isConnected && !address)
 
   // Balance from chain (USDC ERC-20)
   const { data: balanceData, error: balanceError, isLoading: balanceLoading, status: balanceStatus } = useReadContract({
@@ -90,9 +91,10 @@ export function useArcWallet() {
     connect,
     disconnect,
     switchNetwork: () => switchChain?.({ chainId: arcTestnet.id }),
-    ready: true,
+    ready,
     chainId,
     exportWallet,
+    isInitializing,
     isPrivyWallet
   }
 }
