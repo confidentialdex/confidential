@@ -31,6 +31,9 @@ export function addOptimisticOrder(order: any) {
 }
 
 export function updateOptimisticPosition(id: string, updater: any | ((prev: any) => any)) {
+  // Create a new reference so React useMemo updates
+  optimisticPositionUpdates = { ...optimisticPositionUpdates }
+  
   if (typeof updater === 'function') {
     // We store an array of updaters if needed, but for simplicity, let's just store the latest function
     // and a wrapper that applies previous updates.
@@ -51,11 +54,13 @@ export function updateOptimisticPosition(id: string, updater: any | ((prev: any)
 }
 
 export function removeOptimisticPosition(id: string) {
+  optimisticPositionRemovals = new Set(optimisticPositionRemovals)
   optimisticPositionRemovals.add(id)
   notifyOptimisticListeners()
 }
 
 export function removeOptimisticOrder(id: string) {
+  optimisticOrderRemovals = new Set(optimisticOrderRemovals)
   optimisticOrderRemovals.add(id)
   notifyOptimisticListeners()
 }
@@ -98,22 +103,18 @@ export function usePositions(address?: string) {
     optimisticPositionRemovals: optRemovals
   } = useOptimisticState()
 
-  // 1. Get nextPositionId to know what position IDs exist
+  // 1. Get nextPositionId to know what position IDs exist (no address dependency, fetches immediately)
   const { data: nextPosIdRaw, refetch: refetchNextId, isLoading: isNextIdLoading } = useReadContract({
     address: CONTRACTS.TRADING as any,
     abi: ABIS.TRADING as any,
     functionName: 'nextPositionId',
-    query: {
-      enabled: !!address,
-      // NO refetchInterval — event-driven only
-    }
   })
 
-  // 2. Query the latest 20 position IDs backwards from nextPositionId - 1
+  // 2. Query the latest 100 position IDs backwards from nextPositionId - 1
   const detailContracts = useMemo(() => {
     if (!address || !nextPosIdRaw) return []
     const nextId = Number(nextPosIdRaw)
-    const count = Math.min(nextId - 1, 20) // Check latest 20 positions
+    const count = Math.min(nextId - 1, 100) // Check latest 100 positions
     const ids: bigint[] = []
     for (let i = nextId - 1; i >= nextId - count; i--) {
       if (i >= 1) ids.push(BigInt(i))
@@ -249,17 +250,13 @@ export function useOrders(address?: string) {
     address: CONTRACTS.TRADING as any,
     abi: ABIS.TRADING as any,
     functionName: 'nextOrderId',
-    query: {
-      enabled: !!address,
-      // NO refetchInterval — event-driven only
-    }
   })
 
-  // 2. Query the latest 15 order IDs backwards from nextOrderId - 1
+  // 2. Query the latest 100 order IDs backwards from nextOrderId - 1
   const detailContracts = useMemo(() => {
     if (!address || !nextOrderIdRaw) return []
     const nextId = Number(nextOrderIdRaw)
-    const count = Math.min(nextId - 1, 15) // Check latest 15 orders
+    const count = Math.min(nextId - 1, 100) // Check latest 100 orders
     const ids: bigint[] = []
     for (let i = nextId - 1; i >= nextId - count; i--) {
       if (i >= 1) ids.push(BigInt(i))
