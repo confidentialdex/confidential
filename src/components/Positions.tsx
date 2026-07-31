@@ -162,7 +162,8 @@ export default function Positions() {
                           </span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <button 
-                              className="btn-share"
+                              className={`btn-share ${p._isOptimistic ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={p._isOptimistic}
                               onClick={() => setSelectedEditMargin({
                                 positionId: p.positionId,
                                 pair: pairName,
@@ -177,7 +178,8 @@ export default function Positions() {
                               </svg>
                             </button>
                             <button 
-                              className="btn-share"
+                              className={`btn-share ${p._isOptimistic ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={p._isOptimistic}
                               onClick={() => setSelectedEditTpSl({
                                 positionId: p.positionId,
                                 pair: pairName,
@@ -212,6 +214,7 @@ export default function Positions() {
                               </svg>
                             </button>
                             <button 
+                              disabled={p._isOptimistic}
                               onClick={() => setSelectedPartialClose({
                                 positionId: p.positionId,
                                 pair: pairName,
@@ -219,8 +222,9 @@ export default function Positions() {
                                 isLong: p.isLong,
                                 maxSize: p.sizeUsd
                               })} 
-                              className="btn-close"
+                              className={`btn-close ${p._isOptimistic ? 'opacity-50 cursor-not-allowed' : ''}`}
                               style={{ padding: '4px 8px', marginLeft: '4px' }}
+                              title={p._isOptimistic ? "Pending execution on-chain..." : "Close position"}
                             >
                               Close
                             </button>
@@ -286,7 +290,12 @@ export default function Positions() {
                       </span>
                       <span className="font-mono" style={{ textAlign: 'center' }}>0.00%</span>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <button onClick={() => cancelOrder(BigInt(o.orderId))} className="btn-close">
+                        <button 
+                          disabled={o._isOptimistic}
+                          title={o._isOptimistic ? "Pending execution on-chain..." : "Cancel Order"}
+                          onClick={() => cancelOrder(BigInt(o.orderId))} 
+                          className={`btn-close ${o._isOptimistic ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
                           Cancel
                         </button>
                       </div>
