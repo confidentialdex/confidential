@@ -8,6 +8,12 @@ import { subscribeToRefetch } from './useContractEvents'
 // Shared across hook instances so all consumers see the same optimistic data
 let optimisticPositions: any[] = []
 let optimisticOrders: any[] = []
+
+// State for mutating existing on-chain data before events arrive
+let optimisticPositionUpdates: Record<string, any> = {}
+let optimisticPositionRemovals: Set<string> = new Set()
+let optimisticOrderRemovals: Set<string> = new Set()
+
 const optimisticListeners = new Set<() => void>()
 
 function notifyOptimisticListeners() {
@@ -24,13 +30,46 @@ export function addOptimisticOrder(order: any) {
   notifyOptimisticListeners()
 }
 
+export function updateOptimisticPosition(id: string, updater: any | ((prev: any) => any)) {
+  if (typeof updater === 'function') {
+    // We store an array of updaters if needed, but for simplicity, let's just store the latest function
+    // and a wrapper that applies previous updates.
+    const prev = optimisticPositionUpdates[id]
+    optimisticPositionUpdates[id] = (p: any) => {
+      const base = prev ? (typeof prev === 'function' ? prev(p) : { ...p, ...prev }) : p
+      return { ...base, ...updater(base) }
+    }
+  } else {
+    const prev = optimisticPositionUpdates[id]
+    if (typeof prev === 'function') {
+      optimisticPositionUpdates[id] = (p: any) => ({ ...prev(p), ...updater })
+    } else {
+      optimisticPositionUpdates[id] = { ...prev, ...updater }
+    }
+  }
+  notifyOptimisticListeners()
+}
+
+export function removeOptimisticPosition(id: string) {
+  optimisticPositionRemovals.add(id)
+  notifyOptimisticListeners()
+}
+
+export function removeOptimisticOrder(id: string) {
+  optimisticOrderRemovals.add(id)
+  notifyOptimisticListeners()
+}
+
 export function clearOptimisticPositions() {
   optimisticPositions = []
+  optimisticPositionUpdates = {}
+  optimisticPositionRemovals.clear()
   notifyOptimisticListeners()
 }
 
 export function clearOptimisticOrders() {
   optimisticOrders = []
+  optimisticOrderRemovals.clear()
   notifyOptimisticListeners()
 }
 
@@ -41,13 +80,23 @@ function useOptimisticState() {
     optimisticListeners.add(listener)
     return () => { optimisticListeners.delete(listener) }
   }, [])
-  return { optimisticPositions, optimisticOrders }
+  return { 
+    optimisticPositions, 
+    optimisticOrders,
+    optimisticPositionUpdates,
+    optimisticPositionRemovals,
+    optimisticOrderRemovals
+  }
 }
 
 // ─── Positions Hook (Event-Driven) ───
 export function usePositions(address?: string) {
   const lastSuccessRef = useRef<any[]>([])
-  const { optimisticPositions: optPositions } = useOptimisticState()
+  const { 
+    optimisticPositions: optPositions,
+    optimisticPositionUpdates: optUpdates,
+    optimisticPositionRemovals: optRemovals
+  } = useOptimisticState()
 
   // 1. Get nextPositionId to know what position IDs exist
   const { data: nextPosIdRaw, refetch: refetchNextId, isLoading: isNextIdLoading } = useReadContract({
@@ -129,28 +178,43 @@ export function usePositions(address?: string) {
     return parsed.length > 0 ? parsed : lastSuccessRef.current
   }, [positionsData, detailContracts, address])
 
-  // 4. Merge on-chain + optimistic (filter out optimistic that already appear on-chain)
+  // 4. Merge on-chain + optimistic
   const positions = useMemo(() => {
-    if (optPositions.length === 0) return onChainPositions
+    // 1. Apply removals & updates to existing on-chain data
+    let base = onChainPositions
+    
+    if (optRemovals.size > 0) {
+      base = base.filter((p: any) => !optRemovals.has(p.id))
+    }
+    
+    if (Object.keys(optUpdates).length > 0) {
+      base = base.map((p: any) => {
+        if (optUpdates[p.id]) {
+          const updates = typeof optUpdates[p.id] === 'function' ? optUpdates[p.id](p) : optUpdates[p.id]
+          return { ...p, ...updates, _isOptimisticUpdate: true }
+        }
+        return p
+      })
+    }
 
-    // Filter optimistic positions that match the current user
+    if (optPositions.length === 0) return base
+
+    // 2. Add new optimistic positions that don't exist on-chain yet
     const userOptimistic = optPositions.filter(op =>
       op.trader?.toLowerCase() === address?.toLowerCase()
     )
 
-    if (userOptimistic.length === 0) return onChainPositions
+    if (userOptimistic.length === 0) return base
 
-    // Remove optimistic entries whose pairId+isLong already exist in on-chain data
-    // (meaning the event already arrived and real data is available)
     const onChainKeys = new Set(
-      onChainPositions.map((p: any) => `${p.pairId}-${p.isLong}-${p.sizeUsd}`)
+      base.map((p: any) => `${p.pairId}-${p.isLong}-${p.sizeUsd}`)
     )
     const filtered = userOptimistic.filter(op =>
       !onChainKeys.has(`${op.pairId}-${op.isLong}-${op.sizeUsd}`)
     )
 
-    return [...filtered, ...onChainPositions]
-  }, [onChainPositions, optPositions, address])
+    return [...filtered, ...base]
+  }, [onChainPositions, optPositions, optUpdates, optRemovals, address])
 
   const refetchAll = useCallback(() => {
     // Clear optimistic data when real data arrives
@@ -175,7 +239,10 @@ export function usePositions(address?: string) {
 // ─── Orders Hook (Event-Driven) ───
 export function useOrders(address?: string) {
   const lastSuccessRef = useRef<any[]>([])
-  const { optimisticOrders: optOrders } = useOptimisticState()
+  const { 
+    optimisticOrders: optOrders,
+    optimisticOrderRemovals: optRemovals
+  } = useOptimisticState()
 
   // 1. Get nextOrderId to know what order IDs exist
   const { data: nextOrderIdRaw, refetch: refetchNextId, isLoading: isNextIdLoading } = useReadContract({
@@ -262,19 +329,25 @@ export function useOrders(address?: string) {
 
   // 4. Merge on-chain + optimistic orders
   const orders = useMemo(() => {
-    if (optOrders.length === 0) return onChainOrders
+    let base = onChainOrders
+    
+    if (optRemovals.size > 0) {
+      base = base.filter((o: any) => !optRemovals.has(o.id) && !optRemovals.has(o.orderId?.toString()))
+    }
+
+    if (optOrders.length === 0) return base
 
     const userOptimistic = optOrders.filter(oo =>
       oo.trader?.toLowerCase() === address?.toLowerCase()
     )
-    if (userOptimistic.length === 0) return onChainOrders
+    if (userOptimistic.length === 0) return base
 
     // Remove optimistic orders that now exist on-chain
-    const onChainIds = new Set(onChainOrders.map((o: any) => o.orderId))
+    const onChainIds = new Set(base.map((o: any) => o.orderId))
     const filtered = userOptimistic.filter(oo => !onChainIds.has(oo.orderId))
 
-    return [...filtered, ...onChainOrders]
-  }, [onChainOrders, optOrders, address])
+    return [...filtered, ...base]
+  }, [onChainOrders, optOrders, optRemovals, address])
 
   const refetchAll = useCallback(() => {
     clearOptimisticOrders()

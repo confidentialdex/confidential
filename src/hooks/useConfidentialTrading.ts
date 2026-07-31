@@ -4,7 +4,13 @@ import { CONTRACTS, ABIS } from '../config/contracts'
 import toast from 'react-hot-toast'
 import { useUSDCApproval } from './useUSDCApproval'
 import { useTradeStore } from '../store/useTradeStore'
-import { addOptimisticPosition, addOptimisticOrder } from './usePositions'
+import { 
+  addOptimisticPosition, 
+  addOptimisticOrder, 
+  removeOptimisticPosition, 
+  updateOptimisticPosition, 
+  removeOptimisticOrder 
+} from './usePositions'
 
 export function useConfidentialTrading() {
   const { writeContractAsync, data: hash, isPending } = useWriteContract()
@@ -114,6 +120,9 @@ export function useConfidentialTrading() {
         value: EXECUTION_FEE,
       } as any)
       
+      // ── Optimistic Update: remove position immediately ──
+      removeOptimisticPosition(positionId.toString())
+
       toast.success('✨ Position Close Request Placed (100%)', { id: 'close' })
       return tx
     } catch (error: any) {
@@ -258,6 +267,9 @@ export function useConfidentialTrading() {
         args: [orderId],
       } as any)
       
+      // ── Optimistic Update: remove order immediately ──
+      removeOptimisticOrder(orderId.toString())
+
       toast.success('✨ Order Cancelled', { id: 'cancel' })
       return tx
     } catch (error: any) {
@@ -280,6 +292,12 @@ export function useConfidentialTrading() {
         args: [positionId, tpUnits, slUnits],
       } as any)
       
+      // ── Optimistic Update: update TP/SL immediately ──
+      updateOptimisticPosition(positionId.toString(), {
+        tpPrice: tpPriceUsd,
+        slPrice: slPriceUsd
+      })
+
       toast.success('✨ TP / SL Updated', { id: 'updateTpSl' })
       return tx
     } catch (error: any) {
@@ -306,6 +324,11 @@ export function useConfidentialTrading() {
         args: [positionId, amountUnits],
       } as any)
       
+      // ── Optimistic Update ──
+      updateOptimisticPosition(positionId.toString(), (prev: any) => ({
+        collateral: prev.collateral + amountUsd
+      }))
+
       toast.success(`✨ Margin Added ($${amountUsd.toFixed(2)})`, { id: 'addCol' })
       return tx
     } catch (error: any) {
@@ -328,6 +351,11 @@ export function useConfidentialTrading() {
         value: EXECUTION_FEE,
       } as any)
       
+      // ── Optimistic Update ──
+      updateOptimisticPosition(positionId.toString(), (prev: any) => ({
+        collateral: Math.max(0, prev.collateral - amountUsd)
+      }))
+
       toast.success(`✨ Remove Margin Placed ($${amountUsd.toFixed(2)})`, { id: 'rmCol' })
       return tx
     } catch (error: any) {
@@ -349,6 +377,15 @@ export function useConfidentialTrading() {
         value: EXECUTION_FEE,
       } as any)
       
+      // ── Optimistic Update ──
+      updateOptimisticPosition(positionId.toString(), (prev: any) => {
+        const factor = 1 - (closePercentBps / 10000)
+        return {
+          sizeUsd: prev.sizeUsd * factor,
+          collateral: prev.collateral * factor
+        }
+      })
+
       toast.success(`✨ Partial Close Placed (${closePercentBps / 100}%)`, { id: 'closePartial' })
       return tx
     } catch (error: any) {
@@ -387,6 +424,17 @@ export function useConfidentialTrading() {
         value: EXECUTION_FEE,
       } as any)
       
+      // ── Optimistic Update ──
+      updateOptimisticPosition(positionId.toString(), (prev: any) => {
+        const newSize = prev.sizeUsd + additionalSizeUsd
+        const newCollateral = prev.collateral + collateral
+        return {
+          sizeUsd: newSize,
+          collateral: newCollateral,
+          leverage: newSize / newCollateral
+        }
+      })
+
       toast.success(`✨ Position Increase Placed (+$${additionalSizeUsd.toFixed(2)})`, { id: 'increase' })
       return tx
     } catch (error: any) {
