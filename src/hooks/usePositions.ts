@@ -161,28 +161,41 @@ export function usePositions(address?: string) {
       .map((res: any, index: number) => {
         if (res.status !== 'success' || !res.result) return null
         const pos: any = res.result
-        const isOpen = pos[9] as boolean
+        const isArray = Array.isArray(pos)
+        
+        const isOpen = isArray ? Boolean(pos[9]) : Boolean(pos.isOpen)
         if (!isOpen) return null // Only show open positions
         
-        const trader = pos[1] as string
-        if (!address || trader.toLowerCase() !== address.toLowerCase()) return null
+        const trader = isArray ? (pos[1] as string) : (pos.trader as string)
+        if (!address || !trader || trader.toLowerCase() !== address.toLowerCase()) return null
         
         const posId = detailContracts[index].args[0] as bigint
+        const pairId = isArray ? pos[0] : pos.pairId
+        const isLong = isArray ? pos[2] : pos.isLong
+        const sizeUsdRaw = isArray ? pos[3] : pos.sizeUsd
+        const collateralRaw = isArray ? pos[4] : pos.collateral
+        const entryPriceRaw = isArray ? pos[5] : pos.entryPrice
+        const leverageRaw = isArray ? pos[6] : pos.leverage
+        const liqPriceRaw = isArray ? pos[7] : pos.liquidationPrice
+        const openedAtRaw = isArray ? pos[8] : pos.openedAt
+        const tpPriceRaw = isArray ? pos[10] : pos.tpPrice
+        const slPriceRaw = isArray ? pos[11] : pos.slPrice
+
         return {
           id: posId.toString(),
           positionId: posId.toString(),
-          pairId: pos[0],
-          trader: pos[1],
-          isLong: pos[2],
-          sizeUsd: Number(formatUnits(pos[3], 6)),
-          collateral: Number(formatUnits(pos[4], 6)),
-          entryPrice: Number(formatUnits(pos[5], 18)),
-          leverage: Number(pos[6]),
-          liquidationPrice: Number(formatUnits(pos[7], 18)),
-          openedAt: Number(pos[8]) * 1000,
+          pairId: pairId,
+          trader: trader,
+          isLong: Boolean(isLong),
+          sizeUsd: Number(formatUnits(sizeUsdRaw || 0n, 6)),
+          collateral: Number(formatUnits(collateralRaw || 0n, 6)),
+          entryPrice: Number(formatUnits(entryPriceRaw || 0n, 18)),
+          leverage: Number(leverageRaw || 0),
+          liquidationPrice: Number(formatUnits(liqPriceRaw || 0n, 18)),
+          openedAt: Number(openedAtRaw || 0) * 1000,
           isOpen: isOpen,
-          tpPrice: Number(formatUnits(pos[10], 18)),
-          slPrice: Number(formatUnits(pos[11], 18)),
+          tpPrice: Number(formatUnits(tpPriceRaw || 0n, 18)),
+          slPrice: Number(formatUnits(slPriceRaw || 0n, 18)),
         }
       })
       .filter(Boolean) as any[]
@@ -316,31 +329,47 @@ export function useOrders(address?: string) {
       .map((res: any, index: number) => {
         if (res.status !== 'success' || !res.result) return null
         const order: any = res.result
-        const isActive = order[8] as boolean
+        const isArray = Array.isArray(order)
+
+        const isActive = isArray ? Boolean(order[8]) : Boolean(order.isActive)
         if (!isActive) return null // Only show active orders
         
-        const trader = order[1] as string
-        if (!address || trader.toLowerCase() !== address.toLowerCase()) return null
+        const trader = isArray ? (order[1] as string) : (order.trader as string)
+        if (!address || !trader || trader.toLowerCase() !== address.toLowerCase()) return null
         
         const orderId = detailContracts[index].args[0] as bigint
+        const pairId = isArray ? order[0] : order.pairId
+        const isLong = isArray ? order[2] : order.isLong
+        const sizeUsdRaw = isArray ? order[3] : order.sizeUsd
+        const collateralRaw = isArray ? order[4] : order.collateral
+        const leverageRaw = isArray ? order[5] : order.leverage
+        const triggerPriceRaw = isArray ? order[6] : order.triggerPrice
+        const orderTypeRaw = isArray ? order[7] : order.orderType
+        const createdAtRaw = isArray ? order[9] : order.createdAt
+        const positionIdRaw = isArray ? order[10] : order.positionId
+        const feePaidRaw = isArray ? order[11] : order.feePaid
+        const executionFeeRaw = isArray ? order[12] : order.executionFee
+        const tpPriceRaw = isArray ? order[13] : order.tpPrice
+        const slPriceRaw = isArray ? order[14] : order.slPrice
+
         return {
           id: orderId.toString(),
           orderId: Number(orderId),
-          pairId: order[0],
-          trader: order[1],
-          isLong: order[2],
-          sizeUsd: Number(formatUnits(order[3], 6)),
-          collateral: Number(formatUnits(order[4], 6)),
-          leverage: Number(order[5]),
-          triggerPrice: Number(formatUnits(order[6], 18)),
-          orderType: Number(order[7]),
+          pairId: pairId,
+          trader: trader,
+          isLong: Boolean(isLong),
+          sizeUsd: Number(formatUnits(sizeUsdRaw || 0n, 6)),
+          collateral: Number(formatUnits(collateralRaw || 0n, 6)),
+          leverage: Number(leverageRaw || 0),
+          triggerPrice: Number(formatUnits(triggerPriceRaw || 0n, 18)),
+          orderType: Number(orderTypeRaw || 0),
           isActive: isActive,
-          createdAt: Number(order[9]) * 1000,
-          positionId: Number(order[10]),
-          feePaid: Number(formatUnits(order[11], 6)),
-          executionFee: Number(formatUnits(order[12], 18)),
-          tpPrice: Number(formatUnits(order[13], 18)),
-          slPrice: Number(formatUnits(order[14], 18)),
+          createdAt: Number(createdAtRaw || 0) * 1000,
+          positionId: Number(positionIdRaw || 0),
+          feePaid: Number(formatUnits(feePaidRaw || 0n, 6)),
+          executionFee: Number(formatUnits(executionFeeRaw || 0n, 18)),
+          tpPrice: Number(formatUnits(tpPriceRaw || 0n, 18)),
+          slPrice: Number(formatUnits(slPriceRaw || 0n, 18)),
         }
       })
       .filter(Boolean) as any[]
