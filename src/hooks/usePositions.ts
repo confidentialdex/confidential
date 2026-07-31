@@ -187,10 +187,6 @@ export function usePositions(address?: string) {
     const allSuccess = positionsData && positionsData.every((r: any) => r.status === 'success')
     if (parsed.length > 0 || allSuccess) {
       lastSuccessRef.current = parsed
-      // Bug #1 Fix: Clear optimistic data AFTER real on-chain data has arrived
-      // This prevents the "ghost position" flash where optimistic removals are cleared
-      // before new RPC data is ready
-      clearOptimisticPositions()
     }
 
     return parsed.length > 0 ? parsed : lastSuccessRef.current
@@ -345,8 +341,6 @@ export function useOrders(address?: string) {
     const allSuccess = ordersData && ordersData.every((r: any) => r.status === 'success')
     if (parsed.length > 0 || allSuccess) {
       lastSuccessRef.current = parsed
-      // Bug #1 Fix: Clear optimistic data AFTER real on-chain data has arrived
-      clearOptimisticOrders()
     }
 
     return parsed.length > 0 ? parsed : lastSuccessRef.current

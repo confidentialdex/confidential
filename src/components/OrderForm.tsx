@@ -18,7 +18,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
   const { markets, activeMarketId, placeOrder: placeMockOrder } = useTradeStore()
   const { isConnected, balance, connect, isWrongNetwork, address } = useArcWallet()
   const { openPosition, placeOrder, createTwapOrder, isTxPending, increasePosition } = useConfidentialTrading()
-  const { positions: activePositions } = usePositions(address || undefined)
+  const { positions: activePositions, isLoading: isPositionsLoading } = usePositions(address || undefined)
   
   const [orderType, setOrderType] = useState<OrderType>('market')
   const [isProDropdownOpen, setIsProDropdownOpen] = useState(false)
@@ -294,7 +294,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
 
   const handleSubmit = async () => {
     if (!isConnected || isWrongNetwork) { connect(); return }
-    if (!activeMarket || !sizeNum || !orderSummary || isInsufficientBalance || exceedsLiquidity) return
+    if (!activeMarket || !sizeNum || !orderSummary || isInsufficientBalance || exceedsLiquidity || isPositionsLoading) return
     
     try {
       const tpNum = showTpSl ? Number(takeProfit) : 0;
@@ -620,7 +620,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
       {/* Submit Button */}
       <button 
         onClick={handleSubmit} 
-        disabled={isTxPending || (isConnected && (!sizeNum || isInsufficientBalance || exceedsLiquidity))} 
+        disabled={isTxPending || isPositionsLoading || (isConnected && (!sizeNum || isInsufficientBalance || exceedsLiquidity))} 
         style={{ 
           width: '100%', 
           padding: '10px', 
@@ -629,22 +629,24 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
           boxShadow: 'none',
           background: !isConnected 
             ? 'var(--color-green, #26c68b)' 
-            : (isTxPending || !sizeNum || isInsufficientBalance || exceedsLiquidity) 
+            : (isTxPending || isPositionsLoading || !sizeNum || isInsufficientBalance || exceedsLiquidity) 
               ? 'var(--color-bg3)' 
               : (side === 'long' ? 'var(--color-green, #26c68b)' : 'var(--color-red)'), 
           color: !isConnected 
             ? '#0b0e11' 
-            : (isTxPending || !sizeNum || isInsufficientBalance || exceedsLiquidity) 
+            : (isTxPending || isPositionsLoading || !sizeNum || isInsufficientBalance || exceedsLiquidity) 
               ? '#8e8e93' 
               : (side === 'long' ? '#0b0e11' : '#fff'), 
           fontSize: '15px', 
           fontWeight: 600, 
-          cursor: (isTxPending || (isConnected && (!sizeNum || isInsufficientBalance || exceedsLiquidity))) ? 'not-allowed' : 'pointer',
+          cursor: (isTxPending || isPositionsLoading || (isConnected && (!sizeNum || isInsufficientBalance || exceedsLiquidity))) ? 'not-allowed' : 'pointer',
           marginTop: 4
         }}
       >
         {isTxPending 
           ? 'Processing...' 
+          : isPositionsLoading
+            ? 'Syncing Positions...'
           : !isConnected 
             ? 'Connect Wallet' 
             : exceedsLiquidity
