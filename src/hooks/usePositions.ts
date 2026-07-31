@@ -259,7 +259,7 @@ export function usePositions(address?: string) {
     return unsubscribe
   }, [refetchAll])
 
-  const isLoading = isNextIdLoading || (!!address && detailContracts.length > 0 && (!positionsData || isDetailsLoading))
+  const isLoading = isNextIdLoading || (!!address && detailContracts.length > 0 && (!positionsData || isDetailsLoading || positionsData.some((r: any) => r.status === 'pending')))
 
   return { positions, refetchPositions: refetchAll, isLoading }
 }
@@ -416,7 +416,7 @@ export function useOrders(address?: string) {
     return unsubscribe
   }, [refetchAll])
 
-  const isLoading = isNextIdLoading || (!!address && detailContracts.length > 0 && (!ordersData || isDetailsLoading))
+  const isLoading = isNextIdLoading || (!!address && detailContracts.length > 0 && (!ordersData || isDetailsLoading || ordersData.some((r: any) => r.status === 'pending')))
 
   return { orders, refetchOrders: refetchAll, isLoading }
 }
