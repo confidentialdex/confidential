@@ -27,8 +27,26 @@ export function useConfidentialTrading() {
     isApproving 
   } = useUSDCApproval(CONTRACTS.TRADING)
 
-
   const EXECUTION_FEE = parseUnits('0.013', 18) // 0.013 ARC for keeper gas
+
+  // Auto-retry wrapper for RPC "failed to fetch" errors
+  const retryWrite = async (args: Parameters<typeof writeContractAsync>[0], maxRetries = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await writeContractAsync(args)
+      } catch (err: any) {
+        const msg = (err?.message || err?.shortMessage || '').toLowerCase()
+        const isNetworkError = msg.includes('failed to fetch') || msg.includes('network') || msg.includes('timeout') || msg.includes('econnrefused')
+        if (isNetworkError && attempt < maxRetries) {
+          console.warn(`[RetryWrite] Attempt ${attempt}/${maxRetries} failed (network), retrying in ${attempt}s...`)
+          await new Promise(r => setTimeout(r, attempt * 1000))
+          continue
+        }
+        throw err // non-network error or final attempt — let caller handle
+      }
+    }
+    throw new Error('Max retries exceeded')
+  }
 
   // Open Market Position
   const openPosition = async (
@@ -61,7 +79,7 @@ export function useConfidentialTrading() {
       const market = useTradeStore.getState().markets.find(m => m.pair === pairName)
       if (!market) throw new Error("Market not found")
 
-      const tx = await writeContractAsync({
+      const tx = await retryWrite({
         address: CONTRACTS.TRADING as any,
         abi: ABIS.TRADING as any,
         functionName: 'placeOrder',
@@ -112,7 +130,7 @@ export function useConfidentialTrading() {
     try {
       toast.loading('⚡ Submitting Close Position (100%)...', { id: 'close' })
       
-      const tx = await writeContractAsync({
+      const tx = await retryWrite({
         address: CONTRACTS.TRADING as any,
         abi: ABIS.TRADING as any,
         functionName: 'createCloseRequest',
@@ -161,7 +179,7 @@ export function useConfidentialTrading() {
       const tpUnits = tpPriceUsd > 0 ? parseUnits(tpPriceUsd.toFixed(18), 18) : 0n
       const slUnits = slPriceUsd > 0 ? parseUnits(slPriceUsd.toFixed(18), 18) : 0n
 
-      const tx = await writeContractAsync({
+      const tx = await retryWrite({
         address: CONTRACTS.TRADING as any,
         abi: ABIS.TRADING as any,
         functionName: 'placeOrder',
@@ -231,7 +249,7 @@ export function useConfidentialTrading() {
       const tpUnits = tpPriceUsd > 0 ? parseUnits(tpPriceUsd.toFixed(18), 18) : 0n
       const slUnits = slPriceUsd > 0 ? parseUnits(slPriceUsd.toFixed(18), 18) : 0n
 
-      const tx = await writeContractAsync({
+      const tx = await retryWrite({
         address: CONTRACTS.TRADING as any,
         abi: ABIS.TRADING as any,
         functionName: 'createTwapOrder',
@@ -260,7 +278,7 @@ export function useConfidentialTrading() {
   const cancelOrder = async (orderId: bigint) => {
     try {
       toast.loading('⚡ Cancelling Order...', { id: 'cancel' })
-      const tx = await writeContractAsync({
+      const tx = await retryWrite({
         address: CONTRACTS.TRADING as any,
         abi: ABIS.TRADING as any,
         functionName: 'cancelOrder',
@@ -285,7 +303,7 @@ export function useConfidentialTrading() {
       const tpUnits = tpPriceUsd > 0 ? parseUnits(tpPriceUsd.toFixed(18), 18) : 0n
       const slUnits = slPriceUsd > 0 ? parseUnits(slPriceUsd.toFixed(18), 18) : 0n
 
-      const tx = await writeContractAsync({
+      const tx = await retryWrite({
         address: CONTRACTS.TRADING as any,
         abi: ABIS.TRADING as any,
         functionName: 'updateTpSl',
@@ -317,7 +335,7 @@ export function useConfidentialTrading() {
       toast.loading(`⚡ Adding Margin ($${amountUsd.toFixed(2)})...`, { id: 'addCol' })
       const amountUnits = parseUnits(amountUsd.toFixed(6), 6)
 
-      const tx = await writeContractAsync({
+      const tx = await retryWrite({
         address: CONTRACTS.TRADING as any,
         abi: ABIS.TRADING as any,
         functionName: 'addCollateral',
@@ -343,7 +361,7 @@ export function useConfidentialTrading() {
       toast.loading(`⚡ Submitting Remove Margin ($${amountUsd.toFixed(2)})...`, { id: 'rmCol' })
       const amountUnits = parseUnits(amountUsd.toFixed(6), 6)
 
-      const tx = await writeContractAsync({
+      const tx = await retryWrite({
         address: CONTRACTS.TRADING as any,
         abi: ABIS.TRADING as any,
         functionName: 'createRemoveCollateralRequest',
@@ -369,7 +387,7 @@ export function useConfidentialTrading() {
     try {
       toast.loading(`⚡ Submitting Partial Close (${closePercentBps / 100}%)...`, { id: 'closePartial' })
       
-      const tx = await writeContractAsync({
+      const tx = await retryWrite({
         address: CONTRACTS.TRADING as any,
         abi: ABIS.TRADING as any,
         functionName: 'createPartialCloseRequest',
@@ -416,7 +434,7 @@ export function useConfidentialTrading() {
       const sizeUnits = parseUnits(additionalSizeUsd.toFixed(6), 6)
       const acceptablePriceUnits = acceptablePriceUsd > 0 ? parseUnits(acceptablePriceUsd.toFixed(18), 18) : 0n
 
-      const tx = await writeContractAsync({
+      const tx = await retryWrite({
         address: CONTRACTS.TRADING as any,
         abi: ABIS.TRADING as any,
         functionName: 'createIncreaseRequest',
