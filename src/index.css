@@ -6,8 +6,8 @@
   --color-bg1: #0e1218; /* Very dark panel */
   --color-bg2: #151921; /* Dark elevated */
   --color-bg3: #1e232c; /* Dark hover/active */
-  --color-accent: #2962ff; /* TradingView blue */
-  --color-accent-hover: #1e53e5;
+  --color-accent: #FCD535; /* Binance Yellow */
+  --color-accent-hover: #E0BC2D;
   --color-green: #0ECB81; /* Binance green, very distinct */
   --color-green-dim: rgba(14, 203, 129, 0.12);
   --color-red: #ef5350; /* TradingView red */
@@ -261,7 +261,7 @@ input[type="number"] {
 }
 
 .badge-accent {
-  background-color: rgba(0, 82, 255, 0.15);
+  background-color: rgba(252, 213, 53, 0.15);
   color: var(--color-accent);
 }
 
@@ -297,7 +297,7 @@ input[type="number"] {
 
 .btn-primary {
   background-color: var(--color-accent);
-  color: #ffffff;
+  color: #000000;
 }
 
 .btn-primary:hover {

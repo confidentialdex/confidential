@@ -109,7 +109,7 @@ export default function PartialCloseModal({ isOpen, onClose, data }: PartialClos
         <button 
           onClick={handleSubmit} 
           disabled={isTxPending || !amount || Number(amount) <= 0 || Number(amount) > data.maxSize}
-          style={{ width: '100%', padding: '12px', background: isTxPending || !amount || Number(amount) <= 0 || Number(amount) > data.maxSize ? 'var(--color-bg3)' : 'var(--color-accent)', color: isTxPending || !amount || Number(amount) <= 0 || Number(amount) > data.maxSize ? '#8e8e93' : '#000', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: isTxPending || !amount || Number(amount) <= 0 || Number(amount) > data.maxSize ? 'not-allowed' : 'pointer', transition: 'background 0.2s', marginTop: 8 }}
+          style={{ width: '100%', padding: '12px', background: isTxPending || !amount || Number(amount) <= 0 || Number(amount) > data.maxSize ? 'var(--color-bg3)' : 'var(--color-red)', color: isTxPending || !amount || Number(amount) <= 0 || Number(amount) > data.maxSize ? '#8e8e93' : '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: isTxPending || !amount || Number(amount) <= 0 || Number(amount) > data.maxSize ? 'not-allowed' : 'pointer', transition: 'background 0.2s', marginTop: 8 }}
         >
           {isTxPending ? 'Processing...' : 'Confirm Close'}
         </button>
