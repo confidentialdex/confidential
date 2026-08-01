@@ -172,7 +172,7 @@ export function usePositions(userAddress?: string) {
 
   useEffect(() => {
     fetchPositions()
-    const interval = setInterval(() => fetchPositions(true), 15000)
+    const interval = setInterval(() => fetchPositions(true), 5000)
     return () => clearInterval(interval)
   }, [fetchPositions])
 
@@ -239,7 +239,7 @@ export function useClosedPositions(userAddress?: string) {
     }
 
     fetchPositions()
-    const interval = setInterval(() => fetchPositions(true), 30000)
+    const interval = setInterval(() => fetchPositions(true), 10000)
     return () => clearInterval(interval)
   }, [userAddress])
 

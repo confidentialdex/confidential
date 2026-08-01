@@ -131,6 +131,7 @@ export function usePositions(address?: string) {
       return data.positions.map((p: any) => BigInt(p.positionId))
     },
     enabled: !!address,
+    refetchInterval: 5000, // 5s auto-refresh
   })
 
   // 2. Query only the specific active position IDs
@@ -153,7 +154,7 @@ export function usePositions(address?: string) {
     contracts: detailContracts,
     query: {
       enabled: detailContracts.length > 0,
-      // NO refetchInterval — event-driven only
+      refetchInterval: 5000, // 5s auto-refresh for live PnL & collateral updates
     }
   })
 
@@ -309,6 +310,7 @@ export function useOrders(address?: string) {
       return data.orders.map((o: any) => BigInt(o.orderId))
     },
     enabled: !!address,
+    refetchInterval: 5000, // 5s auto-refresh
   })
 
   // 2. Query only the specific active order IDs
@@ -331,7 +333,7 @@ export function useOrders(address?: string) {
     contracts: detailContracts,
     query: {
       enabled: detailContracts.length > 0,
-      // NO refetchInterval — event-driven only
+      refetchInterval: 5000, // 5s auto-refresh
     }
   })
 
