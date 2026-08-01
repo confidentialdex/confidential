@@ -247,10 +247,10 @@ export function usePositions(address?: string) {
     if (userOptimistic.length === 0) return base
 
     const onChainKeys = new Set(
-      base.map((p: any) => `${p.pairId}-${p.isLong}-${p.sizeUsd}`)
+      base.map((p: any) => `${p.pairId}-${p.isLong}`)
     )
     const filtered = userOptimistic.filter(op =>
-      !onChainKeys.has(`${op.pairId}-${op.isLong}-${op.sizeUsd}`)
+      !onChainKeys.has(`${op.pairId}-${op.isLong}`)
     )
 
     return [...filtered, ...base]
@@ -262,6 +262,9 @@ export function usePositions(address?: string) {
   const refetchAll = useCallback(() => {
     refetchGoldskyIds()
     refetchDetails()
+    // Subgraph indexing delay mitigation: refetch again after 3s and 6s
+    setTimeout(() => { refetchGoldskyIds(); refetchDetails() }, 3000)
+    setTimeout(() => { refetchGoldskyIds(); refetchDetails() }, 6000)
   }, [refetchGoldskyIds, refetchDetails])
 
   // 5. Subscribe to event watcher
@@ -425,6 +428,9 @@ export function useOrders(address?: string) {
   const refetchAll = useCallback(() => {
     refetchGoldskyIds()
     refetchDetails()
+    // Subgraph indexing delay mitigation: refetch again after 3s and 6s
+    setTimeout(() => { refetchGoldskyIds(); refetchDetails() }, 3000)
+    setTimeout(() => { refetchGoldskyIds(); refetchDetails() }, 6000)
   }, [refetchGoldskyIds, refetchDetails])
 
   // 5. Subscribe to event watcher
