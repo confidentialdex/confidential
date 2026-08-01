@@ -343,9 +343,13 @@ export function useConfidentialTrading() {
       } as any)
       
       // ── Optimistic Update ──
-      updateOptimisticPosition(positionId.toString(), (prev: any) => ({
-        collateral: prev.collateral + amountUsd
-      }))
+      updateOptimisticPosition(positionId.toString(), (prev: any) => {
+        const newCollateral = prev.collateral + amountUsd
+        return {
+          collateral: newCollateral,
+          leverage: Math.round(prev.sizeUsd / newCollateral)
+        }
+      })
 
       toast.success(`✨ Margin Added ($${amountUsd.toFixed(2)})`, { id: 'addCol' })
       return tx
@@ -370,9 +374,13 @@ export function useConfidentialTrading() {
       } as any)
       
       // ── Optimistic Update ──
-      updateOptimisticPosition(positionId.toString(), (prev: any) => ({
-        collateral: Math.max(0, prev.collateral - amountUsd)
-      }))
+      updateOptimisticPosition(positionId.toString(), (prev: any) => {
+        const newCollateral = Math.max(0, prev.collateral - amountUsd)
+        return {
+          collateral: newCollateral,
+          leverage: newCollateral > 0 ? Math.round(prev.sizeUsd / newCollateral) : prev.leverage
+        }
+      })
 
       toast.success(`✨ Remove Margin Placed ($${amountUsd.toFixed(2)})`, { id: 'rmCol' })
       return tx
