@@ -298,7 +298,7 @@ export default function Positions() {
                         </button>
                       </div>
                     </div>
-                  })
+                  )})
             )}
           </div>
         ) : tab === 'trades' ? (
@@ -388,7 +388,7 @@ export default function Positions() {
                         <a href={`${BLOCK_EXPLORER_URL}/tx/${t.txHash}`} target="_blank" rel="noreferrer" style={{color:'inherit',textDecoration:'none'}}>View Tx</a>
                       </span>
                     </div>
-                  })
+                  )})
             )}
           </div>
         ) : null}
