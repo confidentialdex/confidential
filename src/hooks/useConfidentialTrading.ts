@@ -12,6 +12,20 @@ import {
   removeOptimisticOrder 
 } from './usePositions'
 
+// Optimistic Liquidation Price Calculator
+function calcLiqPrice(entryPrice: number, sizeUsd: number, collateral: number, isLong: boolean): number {
+  if (sizeUsd === 0 || collateral === 0) return 0
+  const maxLoss = collateral * 0.9
+  const estimatedFees = sizeUsd * 0.0015 // 15 bps fee buffer
+  const netAllowable = estimatedFees >= maxLoss ? (sizeUsd * 0.01) : (maxLoss - estimatedFees)
+  
+  if (isLong) {
+    return entryPrice - (entryPrice * netAllowable) / sizeUsd
+  } else {
+    return entryPrice + (entryPrice * netAllowable) / sizeUsd
+  }
+}
+
 export function useConfidentialTrading() {
   const { writeContractAsync, data: hash, isPending } = useWriteContract()
   const { address: walletAddress } = useAccount()
@@ -347,7 +361,8 @@ export function useConfidentialTrading() {
         const newCollateral = prev.collateral + amountUsd
         return {
           collateral: newCollateral,
-          leverage: Math.round(prev.sizeUsd / newCollateral)
+          leverage: Math.round(prev.sizeUsd / newCollateral),
+          liquidationPrice: calcLiqPrice(prev.entryPrice, prev.sizeUsd, newCollateral, prev.isLong)
         }
       })
 
@@ -378,7 +393,8 @@ export function useConfidentialTrading() {
         const newCollateral = Math.max(0, prev.collateral - amountUsd)
         return {
           collateral: newCollateral,
-          leverage: newCollateral > 0 ? Math.round(prev.sizeUsd / newCollateral) : prev.leverage
+          leverage: newCollateral > 0 ? Math.round(prev.sizeUsd / newCollateral) : prev.leverage,
+          liquidationPrice: calcLiqPrice(prev.entryPrice, prev.sizeUsd, newCollateral, prev.isLong)
         }
       })
 
