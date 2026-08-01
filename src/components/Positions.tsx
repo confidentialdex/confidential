@@ -100,28 +100,25 @@ export default function Positions() {
           </div>
         ) : tab === 'positions' ? (
           <div className="pos-table-wrapper">
-            {isInitializing ? (
-              <div className="pos-empty">Restoring session...</div>
+            <div className="pos-header" style={{ gridTemplateColumns: "100px 70px 80px 100px 100px 100px 80px 100px 280px", minWidth: "1010px" }}>
+              <span style={{ textAlign: 'left' }}>Market</span>
+              <span style={{ textAlign: 'left' }}>Side</span>
+              <span style={{ textAlign: 'center' }}>Size</span>
+              <span style={{ textAlign: 'center' }}>Entry Price</span>
+              <span style={{ textAlign: 'center' }}>Mark Price</span>
+              <span style={{ textAlign: 'center' }}>Liq. Price</span>
+              <span style={{ textAlign: 'center' }}>Margin</span>
+              <span style={{ textAlign: 'center' }}>TP / SL</span>
+              <span style={{ textAlign: 'center' }}>PnL</span>
+            </div>
+            
+            {isInitializing || (isPositionsLoading && openPositions.length === 0) ? (
+              <div className="pos-empty">Loading positions...</div>
             ) : !isConnected ? (
               <div className="pos-empty">Please connect wallet to view positions</div>
+            ) : openPositions.length === 0 ? (
+              <div className="pos-empty">No open positions</div>
             ) : (
-              <>
-                <div className="pos-header" style={{ gridTemplateColumns: "100px 70px 80px 100px 100px 100px 80px 100px 280px", minWidth: "1010px" }}>
-                  <span style={{ textAlign: 'left' }}>Market</span>
-                  <span style={{ textAlign: 'left' }}>Side</span>
-                  <span style={{ textAlign: 'center' }}>Size</span>
-                  <span style={{ textAlign: 'center' }}>Entry Price</span>
-                  <span style={{ textAlign: 'center' }}>Mark Price</span>
-                  <span style={{ textAlign: 'center' }}>Liq. Price</span>
-                  <span style={{ textAlign: 'center' }}>Margin</span>
-                  <span style={{ textAlign: 'center' }}>TP / SL</span>
-                  <span style={{ textAlign: 'center' }}>PnL</span>
-                </div>
-                {isPositionsLoading && openPositions.length === 0 ? (
-                  <div className="pos-empty">Loading positions...</div>
-                ) : openPositions.length === 0 ? (
-                  <div className="pos-empty">No open positions</div>
-                ) : (
                   openPositions.map((p) => {
                     // Match pairId (Hash) to actual market to get live price and pair name
                     const matchedMarket = markets.find(m => keccak256(toHex(m.pair)) === p.pairId)
@@ -243,28 +240,25 @@ export default function Positions() {
           </div>
         ) : tab === 'orders' ? (
           <div className="pos-table-wrapper">
-            {isInitializing ? (
-              <div className="pos-empty">Restoring session...</div>
+            <div className="pos-header" style={{ gridTemplateColumns: '170px 80px 70px 80px 90px 110px 110px 90px 210px', minWidth: '1010px', width: '100%' }}>
+              <span style={{ textAlign: 'left' }}>Time</span>
+              <span style={{ textAlign: 'left' }}>Market</span>
+              <span style={{ textAlign: 'center' }}>Side</span>
+              <span style={{ textAlign: 'center' }}>Type</span>
+              <span style={{ textAlign: 'center' }}>Size</span>
+              <span style={{ textAlign: 'center' }}>Price</span>
+              <span style={{ textAlign: 'center' }}>TP / SL</span>
+              <span style={{ textAlign: 'center' }}>Filled</span>
+              <span style={{ textAlign: 'center' }}>Action</span>
+            </div>
+            
+            {isInitializing || (isOrdersLoading && displayOrders.length === 0) ? (
+              <div className="pos-empty">Loading orders...</div>
             ) : !isConnected ? (
               <div className="pos-empty">Please connect wallet to view open orders</div>
+            ) : displayOrders.length === 0 ? (
+              <div className="pos-empty">No open orders</div>
             ) : (
-              <>
-                <div className="pos-header" style={{ gridTemplateColumns: '170px 80px 70px 80px 90px 110px 110px 90px 210px', minWidth: '1010px', width: '100%' }}>
-                  <span style={{ textAlign: 'left' }}>Time</span>
-                  <span style={{ textAlign: 'left' }}>Market</span>
-                  <span style={{ textAlign: 'center' }}>Side</span>
-                  <span style={{ textAlign: 'center' }}>Type</span>
-                  <span style={{ textAlign: 'center' }}>Size</span>
-                  <span style={{ textAlign: 'center' }}>Price</span>
-                  <span style={{ textAlign: 'center' }}>TP / SL</span>
-                  <span style={{ textAlign: 'center' }}>Filled</span>
-                  <span style={{ textAlign: 'center' }}>Action</span>
-                </div>
-                {isOrdersLoading && displayOrders.length === 0 ? (
-                  <div className="pos-empty">Loading orders...</div>
-                ) : displayOrders.length === 0 ? (
-                  <div className="pos-empty">No open orders</div>
-                ) : (
                   displayOrders.map((o) => {
                       const matchedMarket = markets.find(m => keccak256(toHex(m.pair)) === o.pairId)
                       const pairName = matchedMarket ? matchedMarket.pair : o.pairId.slice(0, 10) + '...'
@@ -313,24 +307,23 @@ export default function Positions() {
           </div>
         ) : tab === 'trades' ? (
           <div className="pos-table-wrapper">
-            {!isConnected ? (
+            <div className="pos-header" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)', minWidth: '800px' }}>
+              <span>Time</span>
+              <span style={{ textAlign: 'left' }}>Market</span>
+              <span style={{ textAlign: 'center' }}>Action</span>
+              <span style={{ textAlign: 'center' }}>Size</span>
+              <span style={{ textAlign: 'center' }}>Price</span>
+              <span style={{ textAlign: 'center' }}>Net PnL</span>
+              <span style={{ textAlign: 'center' }}>Tx Hash</span>
+            </div>
+            
+            {isInitializing || (isTradesLoading && trades.length === 0) ? (
+              <div className="pos-empty">Loading trades...</div>
+            ) : !isConnected ? (
               <div className="pos-empty">Please connect wallet to view activity</div>
+            ) : trades.length === 0 ? (
+              <div className="pos-empty">No trade history</div>
             ) : (
-              <>
-                <div className="pos-header" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)', minWidth: '800px' }}>
-                  <span>Time</span>
-                  <span style={{ textAlign: 'left' }}>Market</span>
-                  <span style={{ textAlign: 'center' }}>Action</span>
-                  <span style={{ textAlign: 'center' }}>Size</span>
-                  <span style={{ textAlign: 'center' }}>Price</span>
-                  <span style={{ textAlign: 'center' }}>Net PnL</span>
-                  <span style={{ textAlign: 'center' }}>Tx Hash</span>
-                </div>
-                {isTradesLoading && trades.length === 0 ? (
-                  <div className="pos-empty">Loading trades...</div>
-                ) : trades.length === 0 ? (
-                  <div className="pos-empty">No trade history</div>
-                ) : (
                   trades.map((t) => {
                     const matchedMarket = markets.find(m => keccak256(toHex(m.pair)) === t.pairId)
                     const pairName = matchedMarket ? matchedMarket.pair : t.pairId.slice(0, 10) + '...'
