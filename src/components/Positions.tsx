@@ -146,7 +146,7 @@ export default function Positions() {
                       <div key={p.id} className="pos-row" style={{ gridTemplateColumns: "100px 70px 80px 100px 100px 100px 80px 100px 280px", minWidth: "1010px" }}>
                         <span style={{ fontWeight: 600, textAlign: 'left' }}>{pairName}</span>
                         <span className={p.isLong ? 'text-green' : 'text-red'} style={{ textTransform: 'uppercase', fontSize: 11, fontWeight: 600, textAlign: 'left' }}>
-                          {p.isLong ? 'long' : 'short'} {p.leverage}x
+                          {p.isLong ? 'long' : 'short'} {Math.round(p.leverage)}x
                         </span>
                         <span className="font-mono" style={{ textAlign: 'center' }}>{p.sizeUsd.toFixed(2)}</span>
                         <span className="font-mono" style={{ textAlign: 'center' }}>${formatPrice(p.entryPrice)}</span>

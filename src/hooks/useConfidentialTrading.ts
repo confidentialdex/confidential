@@ -449,7 +449,7 @@ export function useConfidentialTrading() {
         return {
           sizeUsd: newSize,
           collateral: newCollateral,
-          leverage: newSize / newCollateral
+          leverage: Math.round(newSize / newCollateral)
         }
       })
 

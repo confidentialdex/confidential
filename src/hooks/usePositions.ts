@@ -214,6 +214,19 @@ export function usePositions(address?: string) {
     const allSuccess = positionsData && positionsData.every((r: any) => r.status === 'success')
     if (parsed.length > 0 || allSuccess) {
       lastSuccessRef.current = parsed
+      // Auto-clear stale optimistic updates/removals once real data arrives
+      if (Object.keys(optimisticPositionUpdates).length > 0 || optimisticPositionRemovals.size > 0) {
+        setTimeout(() => {
+          optimisticPositionUpdates = {}
+          optimisticPositionRemovals = new Set()
+          // Also clear injected optimistic positions that now exist on-chain
+          if (optimisticPositions.length > 0) {
+            const onChainKeys = new Set(parsed.map((p: any) => `${p.pairId}-${p.isLong}`))
+            optimisticPositions = optimisticPositions.filter(op => !onChainKeys.has(`${op.pairId}-${op.isLong}`))
+          }
+          notifyOptimisticListeners()
+        }, 500)
+      }
     }
 
     return parsed.length > 0 ? parsed : lastSuccessRef.current
