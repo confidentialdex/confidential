@@ -110,7 +110,7 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
         rolloverFeePerHour = 0;
         liquidationRewardBps = 100;
         maxOrderAge = 7 days;
-        executionBufferBps = 30;
+        executionBufferBps = 10;
     }
 
     /// @notice Allow the contract to receive ETH (Arc native tokens) for Pyth Oracle refunds
