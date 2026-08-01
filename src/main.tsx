@@ -41,11 +41,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           loginMethods: ['email', 'wallet'],
           defaultChain: arcTestnet,
           supportedChains: [arcTestnet],
-          rpcConfig: {
-            rpcUrls: {
-              [arcTestnet.id]: import.meta.env.VITE_ARC_RPC || 'https://rpc.drpc.testnet.arc.io',
-            },
-          },
           appearance: {
             theme: 'dark',
             accentColor: '#0052FF',
