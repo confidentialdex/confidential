@@ -1,6 +1,14 @@
-# ⚡ Confidential DEX
+# 🚀 Confidential DEX
+
+[![Built on Arc Network](https://img.shields.io/badge/Network-Arc_Testnet-blue.svg?style=for-the-badge)](https://testnet.arcscan.app)
+[![React + Vite](https://img.shields.io/badge/Frontend-React_18_%7C_Vite-61DAFB.svg?logo=react&style=for-the-badge)](https://react.dev/)
+[![Solidity](https://img.shields.io/badge/Contracts-Solidity_v0.8.20-363636.svg?logo=solidity&style=for-the-badge)](https://soliditylang.org/)
+[![Status](https://img.shields.io/badge/Status-Hackathon_Submission-brightgreen.svg?style=for-the-badge)](#)
 
 **The frictionless on-chain trading engine on Arc Network. Unified USDC for gas & collateral means zero Web3 onboarding friction.**
+
+[🌟 **View Live App**](https://confidentialdex.vercel.app) (Replace with your actual Vercel URL) | [📖 **Read Documentation**](#-key-features)
+
 
 ![Confidential DEX Preview](./resources/confidential_app.png)
 
@@ -107,6 +115,11 @@ npm run dev
 Run the background automation script to process orders and liquidations via WebSocket:
 ```bash
 cd contracts
-export PRIVATE_KEY=0xyour_keeper_private_key
-node feederBot.cjs
+export BOT_KEEPER_PRIVATE_KEY=0xyour_keeper_private_key
+node bot/feederBot.cjs
 ```
+
+---
+
+## 📜 License
+This project is open-source and submitted for the Arc Network Hackathon. All smart contracts and client codes are provided as-is.
