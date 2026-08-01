@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { gql } from 'graphql-request'
 import { gqlClient } from '../config/graphql'
 import { formatUnits } from 'viem'
@@ -180,68 +181,51 @@ export function usePositions(userAddress?: string) {
 }
 
 export function useClosedPositions(userAddress?: string) {
-  const [closedPositions, setClosedPositions] = useState<IndexerPosition[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { data: closedPositions = [], isLoading } = useQuery({
+    queryKey: ['goldskyClosedPositions', userAddress],
+    queryFn: async () => {
+      if (!userAddress) return []
 
-  useEffect(() => {
-    async function fetchPositions(isPolling = false) {
-      try {
-        if (!isPolling) setIsLoading(true)
-        if (!userAddress) {
-          setClosedPositions([])
-          return
-        }
-
-        const query = gql`
-          query GetUserClosedPositions($user: Bytes!) {
-            positions(where: { trader: $user, isOpen: false }, orderBy: closedAt, orderDirection: desc) {
-              id
-              positionId
-              trader
-              pairId
-              isLong
-              sizeUsd
-              entryPrice
-              leverage
-              collateral
-              liquidationPrice
-              isOpen
-              openedAt
-              closedAt
-              exitPrice
-              pnl
-            }
+      const query = gql`
+        query GetUserClosedPositions($user: Bytes!) {
+          positions(where: { trader: $user, isOpen: false }, orderBy: closedAt, orderDirection: desc) {
+            id
+            positionId
+            trader
+            pairId
+            isLong
+            sizeUsd
+            entryPrice
+            leverage
+            collateral
+            liquidationPrice
+            isOpen
+            openedAt
+            closedAt
+            exitPrice
+            pnl
           }
-        `
-        
-        const data: any = await gqlClient.request(query, { user: userAddress.toLowerCase() })
-        
-        const formatted = data.positions.map((p: any) => ({
-          ...p,
-          positionId: Number(p.positionId),
-          sizeUsd: Number(formatUnits(BigInt(p.sizeUsd), 6)),
-          entryPrice: Number(formatUnits(BigInt(p.entryPrice), 18)),
-          leverage: Number(p.leverage),
-          collateral: Number(formatUnits(BigInt(p.collateral), 6)),
-          liquidationPrice: Number(formatUnits(BigInt(p.liquidationPrice), 18)),
-          openedAt: Number(p.openedAt) * 1000,
-          closedAt: Number(p.closedAt) * 1000,
-          exitPrice: p.exitPrice ? Number(formatUnits(BigInt(p.exitPrice), 18)) : 0,
-          pnl: p.pnl ? Number(formatUnits(BigInt(p.pnl), 6)) : 0
-        }))
-
-        setClosedPositions(formatted)
-      } catch (e) {
-        console.error("Goldsky Fetch Closed Positions Error:", e)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchPositions()
-    const interval = setInterval(() => fetchPositions(true), 10000)
-    return () => clearInterval(interval)
-  }, [userAddress])
+        }
+      `
+      
+      const data: any = await gqlClient.request(query, { user: userAddress.toLowerCase() })
+      
+      return data.positions.map((p: any) => ({
+        ...p,
+        positionId: Number(p.positionId),
+        sizeUsd: Number(formatUnits(BigInt(p.sizeUsd), 6)),
+        entryPrice: Number(formatUnits(BigInt(p.entryPrice), 18)),
+        leverage: Number(p.leverage),
+        collateral: Number(formatUnits(BigInt(p.collateral), 6)),
+        liquidationPrice: Number(formatUnits(BigInt(p.liquidationPrice), 18)),
+        openedAt: Number(p.openedAt) * 1000,
+        closedAt: Number(p.closedAt) * 1000,
+        exitPrice: p.exitPrice ? Number(formatUnits(BigInt(p.exitPrice), 18)) : 0,
+        pnl: p.pnl ? Number(formatUnits(BigInt(p.pnl), 6)) : 0
+      }))
+    },
+    refetchInterval: 5000
+  })
 
   return { closedPositions, isLoading }
 }
@@ -375,46 +359,13 @@ export interface IndexerTradeRecord {
 }
 
 export function useTradeRecords(userAddress?: string) {
-  const [trades, setTrades] = useState<IndexerTradeRecord[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    async function fetchTrades(isPolling = false) {
-      try {
-        if (!isPolling) setIsLoading(true)
-        if (!userAddress) {
-          const query = gql`
-            query GetAllTrades {
-              tradeRecords(first: 50, orderBy: timestamp, orderDirection: desc) {
-                id
-                trader
-                pairId
-                isLong
-                action
-                sizeUsd
-                price
-                pnl
-                timestamp
-                txHash
-              }
-            }
-          `
-          const data: any = await gqlClient.request(query)
-          const formatted = data.tradeRecords.map((t: any) => ({
-            ...t,
-            sizeUsd: Number(formatUnits(BigInt(t.sizeUsd), 6)),
-            price: Number(formatUnits(BigInt(t.price), 18)),
-            pnl: t.pnl !== null && t.pnl !== undefined ? Number(formatUnits(BigInt(t.pnl), 6)) : undefined,
-            timestamp: Number(t.timestamp) * 1000
-          }))
-          setTrades(formatted)
-          setIsLoading(false)
-          return
-        }
-
+  const { data: trades = [], isLoading } = useQuery({
+    queryKey: ['goldskyTradeRecords', userAddress],
+    queryFn: async () => {
+      if (!userAddress) {
         const query = gql`
-          query GetUserTrades($user: Bytes!) {
-            tradeRecords(where: { trader: $user }, orderBy: timestamp, orderDirection: desc) {
+          query GetAllTrades {
+            tradeRecords(first: 50, orderBy: timestamp, orderDirection: desc) {
               id
               trader
               pairId
@@ -428,29 +379,45 @@ export function useTradeRecords(userAddress?: string) {
             }
           }
         `
-        
-        const data: any = await gqlClient.request(query, { user: userAddress.toLowerCase() })
-        
-        const formatted = data.tradeRecords.map((t: any) => ({
+        const data: any = await gqlClient.request(query)
+        return data.tradeRecords.map((t: any) => ({
           ...t,
           sizeUsd: Number(formatUnits(BigInt(t.sizeUsd), 6)),
           price: Number(formatUnits(BigInt(t.price), 18)),
           pnl: t.pnl !== null && t.pnl !== undefined ? Number(formatUnits(BigInt(t.pnl), 6)) : undefined,
           timestamp: Number(t.timestamp) * 1000
         }))
-
-        setTrades(formatted)
-      } catch (e) {
-        console.error("Goldsky Fetch Trades Error:", e)
-      } finally {
-        setIsLoading(false)
       }
-    }
 
-    fetchTrades()
-    const interval = setInterval(() => fetchTrades(true), 30000)
-    return () => clearInterval(interval)
-  }, [userAddress])
+      const query = gql`
+        query GetUserTrades($user: Bytes!) {
+          tradeRecords(where: { trader: $user }, orderBy: timestamp, orderDirection: desc) {
+            id
+            trader
+            pairId
+            isLong
+            action
+            sizeUsd
+            price
+            pnl
+            timestamp
+            txHash
+          }
+        }
+      `
+      
+      const data: any = await gqlClient.request(query, { user: userAddress.toLowerCase() })
+      
+      return data.tradeRecords.map((t: any) => ({
+        ...t,
+        sizeUsd: Number(formatUnits(BigInt(t.sizeUsd), 6)),
+        price: Number(formatUnits(BigInt(t.price), 18)),
+        pnl: t.pnl !== null && t.pnl !== undefined ? Number(formatUnits(BigInt(t.pnl), 6)) : undefined,
+        timestamp: Number(t.timestamp) * 1000
+      }))
+    },
+    refetchInterval: 5000
+  })
 
   return { trades, isLoading }
 }
