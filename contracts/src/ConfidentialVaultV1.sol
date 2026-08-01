@@ -17,7 +17,7 @@ interface IERC20 {
 
 /// @title ConfidentialVault V1 — Dual Vault Liquidity System (Prime & Degen)
 /// @notice Handles LP deposits, withdrawals, and settles PnL from Trading.
-/// @dev Prime is protected up to primeProtectionBps (20%), Degen absorbs first loss.
+/// @dev Prime is protected up to primeProtectionBps (60%), Degen absorbs first loss.
 contract ConfidentialVaultV1 is Initializable, ReentrancyGuard {
     // ──────────── State ────────────
     string public constant name = "Confidential Vault Share";
@@ -50,7 +50,7 @@ contract ConfidentialVaultV1 is Initializable, ReentrancyGuard {
     uint256 public totalBacking; 
 
     // ── Caps & Limits ──
-    uint256 public primeProtectionBps; // 20% prime protection
+    uint256 public primeProtectionBps; // 60% prime protection
     uint256 public maxPrimeDeposits;
     uint256 public maxDegenDeposits;
     uint256 public maxDepositPerUser;
@@ -101,7 +101,7 @@ contract ConfidentialVaultV1 is Initializable, ReentrancyGuard {
         core = ConfidentialCoreV1(_core);
         trading = _trading;
 
-        primeProtectionBps = 2000;
+        primeProtectionBps = 6000;
         maxPrimeDeposits = 35_000_000 * 1e6;
         maxDegenDeposits = 15_000_000 * 1e6;
         maxDepositPerUser = 1_000_000 * 1e6;
