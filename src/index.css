@@ -8,8 +8,8 @@
   --color-bg3: #1e232c; /* Dark hover/active */
   --color-accent: #2962ff; /* TradingView blue */
   --color-accent-hover: #1e53e5;
-  --color-green: #26a69a; /* TradingView green */
-  --color-green-dim: rgba(38, 166, 154, 0.12);
+  --color-green: #0ECB81; /* Binance green, very distinct */
+  --color-green-dim: rgba(14, 203, 129, 0.12);
   --color-red: #ef5350; /* TradingView red */
   --color-red-dim: rgba(239, 83, 80, 0.12);
   --color-text1: #d1d4dc; /* TradingView primary text */

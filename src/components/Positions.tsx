@@ -362,16 +362,24 @@ export default function Positions() {
                         actionClass = t.isLong ? 'text-green' : 'text-red';
                       } else if (t.action === 'AddCollateral') {
                         displayAction = 'Add Margin';
-                        actionClass = 'text-accent';
+                        actionClass = 'text-green';
                       } else if (t.action === 'RemoveCollateral') {
                         displayAction = 'Remove Margin';
-                        actionClass = 'text-accent';
+                        actionClass = 'text-red';
                       }
                     } else {
-                      if (t.action === 'AddCollateral') displayAction = 'Add Margin';
-                      if (t.action === 'RemoveCollateral') displayAction = 'Remove Margin';
-                      if (t.action === 'PartialClose') displayAction = 'Partial Close';
-                      actionClass = t.action === 'Open' ? 'text-green' : (t.action.includes('Close') || t.action === 'Liquidate') ? 'text-red' : 'text-accent';
+                      if (t.action === 'AddCollateral') { 
+                        displayAction = 'Add Margin'; 
+                        actionClass = 'text-green'; 
+                      } else if (t.action === 'RemoveCollateral') { 
+                        displayAction = 'Remove Margin'; 
+                        actionClass = 'text-red'; 
+                      } else if (t.action === 'PartialClose') {
+                        displayAction = 'Partial Close';
+                        actionClass = 'text-red';
+                      } else {
+                        actionClass = t.action === 'Open' ? 'text-green' : (t.action.includes('Close') || t.action === 'Liquidate') ? 'text-red' : 'text-accent';
+                      }
                     }
 
                     return (

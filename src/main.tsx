@@ -18,9 +18,9 @@ const wagmiConfig = createConfig({
   chains: [arcTestnet],
   transports: {
     [arcTestnet.id]: fallback([
+      http('https://rpc.quicknode.testnet.arc.io'),
       http('https://5042002.rpc.thirdweb.com'),
       http('https://rpc.drpc.testnet.arc.io'),
-      http('https://rpc.quicknode.testnet.arc.io'),
       http('https://rpc.blockdaemon.testnet.arc.io'),
     ]),
   },
