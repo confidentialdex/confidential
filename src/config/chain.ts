@@ -11,11 +11,11 @@ export const arcTestnet = defineChain({
   rpcUrls: {
     default: {
       http: [
-        import.meta.env.VITE_ARC_RPC || 'https://rpc.testnet.arc.network',
-        'https://rpc.testnet.arc.io',
+        import.meta.env.VITE_ARC_RPC || 'https://rpc.quicknode.testnet.arc.io',
         'https://rpc.drpc.testnet.arc.io',
-        'https://rpc.quicknode.testnet.arc.io',
-        'https://rpc.blockdaemon.testnet.arc.io'
+        'https://rpc.blockdaemon.testnet.arc.io',
+        'https://rpc.testnet.arc.network',
+        'https://rpc.testnet.arc.io'
       ],
     },
   },
