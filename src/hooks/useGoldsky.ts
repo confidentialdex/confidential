@@ -181,7 +181,7 @@ export function usePositions(userAddress?: string) {
 }
 
 export function useClosedPositions(userAddress?: string) {
-  const { data: closedPositions = [], isLoading } = useQuery({
+  const { data: closedPositions = [], isLoading } = useQuery<IndexerPosition[]>({
     queryKey: ['goldskyClosedPositions', userAddress],
     queryFn: async () => {
       if (!userAddress) return []
@@ -359,7 +359,7 @@ export interface IndexerTradeRecord {
 }
 
 export function useTradeRecords(userAddress?: string) {
-  const { data: trades = [], isLoading } = useQuery({
+  const { data: trades = [], isLoading } = useQuery<IndexerTradeRecord[]>({
     queryKey: ['goldskyTradeRecords', userAddress],
     queryFn: async () => {
       if (!userAddress) {
