@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { WagmiProvider } from '@privy-io/wagmi'
-import { http, createConfig } from 'wagmi'
+import { http, fallback, createConfig } from 'wagmi'
 import { injected, walletConnect } from 'wagmi/connectors'
 import { arcTestnet } from './config/chain'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -17,7 +17,12 @@ const queryClient = new QueryClient()
 const wagmiConfig = createConfig({
   chains: [arcTestnet],
   transports: {
-    [arcTestnet.id]: http(import.meta.env.VITE_ARC_RPC || 'https://rpc.testnet.arc.network'),
+    [arcTestnet.id]: fallback([
+      http(import.meta.env.VITE_ARC_RPC || 'https://rpc.drpc.testnet.arc.io'),
+      http('https://rpc.quicknode.testnet.arc.io'),
+      http('https://rpc.blockdaemon.testnet.arc.io'),
+      http('https://rpc.testnet.arc.network')
+    ]),
   },
   connectors: [
     injected(),
@@ -36,6 +41,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           loginMethods: ['email', 'wallet'],
           defaultChain: arcTestnet,
           supportedChains: [arcTestnet],
+          rpcConfig: {
+            rpcUrls: {
+              [arcTestnet.id]: import.meta.env.VITE_ARC_RPC || 'https://rpc.drpc.testnet.arc.io',
+            },
+          },
           appearance: {
             theme: 'dark',
             accentColor: '#0052FF',
