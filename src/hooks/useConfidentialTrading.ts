@@ -13,7 +13,7 @@ import {
 } from './usePositions'
 
 // Optimistic Liquidation Price Calculator
-function calcLiqPrice(entryPrice: number, sizeUsd: number, collateral: number, isLong: boolean): number {
+export function calcLiqPrice(entryPrice: number, sizeUsd: number, collateral: number, isLong: boolean): number {
   if (sizeUsd === 0 || collateral === 0) return 0
   const maxLoss = collateral * 0.9
   const estimatedFees = sizeUsd * 0.0015 // 15 bps fee buffer

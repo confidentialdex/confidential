@@ -392,7 +392,9 @@ export default function Positions() {
                         {displayAction}
                       </span>
                       <span className="font-mono" style={{ textAlign: 'center' }}>{t.sizeUsd.toFixed(2)}</span>
-                      <span className="font-mono" style={{ textAlign: 'center' }}>${formatPrice(t.price)}</span>
+                      <span className="font-mono" style={{ textAlign: 'center' }}>
+                        {(t.action === 'AddCollateral' || t.action === 'RemoveCollateral') ? '-' : `$${formatPrice(t.price)}`}
+                      </span>
                       <span className="font-mono" style={{ textAlign: 'center', color: pnlColor, fontWeight: 600 }}>{pnlDisplay}</span>
                       <span className="font-mono text-accent" style={{ textAlign: 'center' }}>
                         <a href={`${BLOCK_EXPLORER_URL}/tx/${t.txHash}`} target="_blank" rel="noreferrer" style={{color:'inherit',textDecoration:'none'}}>View Tx</a>

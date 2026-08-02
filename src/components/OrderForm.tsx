@@ -4,7 +4,7 @@ import { useReadContracts } from 'wagmi'
 import { CONTRACTS, ABIS } from '../config/contracts'
 import { useTradeStore } from '../store/useTradeStore'
 import { useArcWallet } from '../hooks/useArcWallet'
-import { useConfidentialTrading } from '../hooks/useConfidentialTrading'
+import { useConfidentialTrading, calcLiqPrice } from '../hooks/useConfidentialTrading'
 import { usePositions } from '../hooks/usePositions'
 import type { OrderSide, OrderType } from '../types'
 
@@ -208,16 +208,36 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
     const feeMultiplier = orderType === 'limit' ? 0.0003 : 0.0005
     const originalFees = notional * feeMultiplier
     const fees = Math.max(0, originalFees - feeDiscountUsd)
-    const liqMul = side === 'long' ? 1 - 0.9 / leverage : 1 + 0.9 / leverage
+
+    let finalLiqPrice = 0
+    let finalEntryPrice = effectivePrice
+
+    // If position exists, calculate VWAP Average
+    if (currentPosition) {
+      const newSizeUsd = currentPosition.sizeUsd + notional
+      const newCollateral = currentPosition.collateral + collateral
+      
+      const posBase = currentPosition.sizeUsd / currentPosition.entryPrice
+      const addBase = notional / effectivePrice
+      const newEntryPrice = newSizeUsd / (posBase + addBase)
+      finalEntryPrice = newEntryPrice
+
+      finalLiqPrice = calcLiqPrice(newEntryPrice, newSizeUsd, newCollateral, side === 'long')
+    } else {
+      // Single Position Fallback
+      finalLiqPrice = calcLiqPrice(effectivePrice, notional, collateral, side === 'long')
+    }
+
     return {
       collateral: collateral.toFixed(2),
       notional: notional.toFixed(2),
-      liqPrice: (effectivePrice * liqMul).toFixed(2),
+      liqPrice: finalLiqPrice.toFixed(2),
+      entryPrice: finalEntryPrice.toFixed(2), // Optional: can be displayed if wanted
       fees: fees.toFixed(2),
       feeDiscount: feeDiscountUsd.toFixed(2),
       totalRequired: collateral + fees
     }
-  }, [effectivePrice, sizeNum, leverage, side, usdSize, feeDiscountUsd])
+  }, [effectivePrice, sizeNum, leverage, side, usdSize, feeDiscountUsd, currentPosition, orderType])
 
   const handleSideChange = (newSide: OrderSide) => {
     if (newSide === side) return;
