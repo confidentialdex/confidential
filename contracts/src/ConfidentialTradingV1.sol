@@ -151,7 +151,7 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
             require(isLong ? slPrice < triggerPrice || orderType == 2 : slPrice > triggerPrice || orderType == 2, "Invalid SL price");
         }
 
-        core.validateOpenPosition(pairId, msg.sender, isLong, sizeUsd, leverage);
+        core.validateOpenPosition(pairId, msg.sender, isLong, sizeUsd, leverage * 10000);
 
         bool isMaker = (orderType == 0);
         uint256 fee = core.calculateFee(sizeUsd, isMaker);
@@ -197,7 +197,7 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
         require(intervalSec >= 60, "Min 60s interval");
         require(totalSizeUsd >= MIN_POSITION_SIZE * slices, "Slice size too small");
         
-        core.validateOpenPosition(pairId, msg.sender, isLong, totalSizeUsd, leverage);
+        core.validateOpenPosition(pairId, msg.sender, isLong, totalSizeUsd, leverage * 10000);
 
         uint256 collateral = totalSizeUsd / leverage;
         uint256 fee = core.calculateFee(totalSizeUsd, false); // Taker fee
@@ -379,7 +379,10 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
             order.isActive = false;
         } else if (order.orderType == 7) { // Remove Collateral
             require(!core.paused(), "Paused");
-            _executeRemoveCollateral(order, currentPrice);
+            bool success = _executeRemoveCollateral(order, currentPrice);
+            if (!success) {
+                emit OrderCancelled(orderId);
+            }
             hasActiveCloseRequest[order.positionId] = false;
             order.isActive = false;
         } else if (order.orderType == 4) { // TWAP
@@ -405,7 +408,7 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
             }
             
             // FIX EXPLOIT-3: Re-validate OI limits for each TWAP slice
-            core.validateOpenPosition(order.pairId, order.trader, order.isLong, slice.sizeUsd, order.leverage);
+            core.validateOpenPosition(order.pairId, order.trader, order.isLong, slice.sizeUsd, order.leverage * 10000);
 
             _executeOpen(slice, currentPrice);
             
@@ -536,11 +539,17 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
     //              TP / SL / LIQUIDATION
     // ══════════════════════════════════════════════════════════
 
-    /// @notice Update TP and SL for an open position
     function updateTpSl(uint256 positionId, uint256 newTpPrice, uint256 newSlPrice) external nonReentrant {
         Position storage pos = positions[positionId];
         require(pos.isOpen, "Not open");
         require(pos.trader == msg.sender, "Not owner");
+        
+        if (newTpPrice > 0) {
+            require(pos.isLong ? newTpPrice > pos.entryPrice : newTpPrice < pos.entryPrice, "Invalid TP");
+        }
+        if (newSlPrice > 0) {
+            require(pos.isLong ? newSlPrice < pos.entryPrice : newSlPrice > pos.entryPrice, "Invalid SL");
+        }
         
         pos.tpPrice = newTpPrice;
         pos.slPrice = newSlPrice;
@@ -610,8 +619,15 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
         core.updateFunding(pos.pairId);
         int256 fundingFee = _calcFundingFee(pos);
 
-        uint256 totalAccruedFees = rolloverFee;
-        if (fundingFee > 0) totalAccruedFees += uint256(fundingFee);
+        int256 netFees = int256(rolloverFee) + fundingFee;
+        uint256 totalAccruedFees;
+        if (netFees > 0) {
+            totalAccruedFees = uint256(netFees);
+        } else if (netFees < 0) {
+            totalAccruedFees = 0;
+            uint256 fundingReward = uint256(-netFees);
+            pos.collateral += vault.payFundingReward(fundingReward);
+        }
 
         uint256 closingFee = core.calculateFee(pos.sizeUsd, false); // taker fee 0.04%
         uint256 totalFeesToSettle = totalAccruedFees + closingFee;
@@ -778,6 +794,8 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
         require(pos.isOpen, "Not open");
         require(pos.trader == msg.sender, "Not owner");
 
+        _settleAccruedFees(pos);
+
         // Transfer USDC from trader to Vault
         _safeTransferFrom(msg.sender, address(vault), amount);
 
@@ -820,35 +838,37 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
         emit OrderPlaced(orderId, msg.sender, pos.pairId, 7, 0);
     }
 
-    function _executeRemoveCollateral(PendingOrder memory order, uint256 currentPrice) internal {
+    function _executeRemoveCollateral(PendingOrder memory order, uint256 currentPrice) internal returns (bool) {
         Position storage pos = positions[order.positionId];
-        require(pos.isOpen, "Not open");
+        if (!pos.isOpen) return false;
         uint256 amount = order.sizeUsd; // Read from sizeUsd
 
         _settleAccruedFees(pos);
 
+        if (pos.collateral <= amount) return false;
         uint256 newCollateral = pos.collateral - amount;
-        require(newCollateral >= MIN_COLLATERAL, "Below min collateral");
+        if (newCollateral < MIN_COLLATERAL) return false;
 
-        uint256 newLeverage = pos.sizeUsd / newCollateral;
+        uint256 newLeverageScaled = (pos.sizeUsd * 10000) / newCollateral;
         ConfidentialCoreV1.PairConfig memory pair = core.getPairConfig(pos.pairId);
-        require(newLeverage <= pair.maxLeverage, "Exceeds max leverage");
+        if (newLeverageScaled > pair.maxLeverage * 10000) return false;
 
         uint256 newLiqPrice = _calcLiqPrice(pos.entryPrice, pos.sizeUsd, newCollateral, pos.isLong);
         
         if (pos.isLong) {
-            require(currentPrice > newLiqPrice, "Would be liquidatable");
+            if (currentPrice <= newLiqPrice) return false;
         } else {
-            require(currentPrice < newLiqPrice, "Would be liquidatable");
+            if (currentPrice >= newLiqPrice) return false;
         }
 
         pos.collateral = newCollateral;
-        pos.leverage = newLeverage;
+        pos.leverage = pos.sizeUsd / newCollateral;
         pos.liquidationPrice = newLiqPrice;
 
         vault.returnCollateral(pos.trader, amount);
 
         emit CollateralRemoved(order.positionId, pos.trader, amount, newLiqPrice);
+        return true;
     }
 
     // ══════════════════════════════════════════════════════════
@@ -903,8 +923,8 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
 
         _settleAccruedFees(pos);
 
-        uint256 newLeverage = (pos.sizeUsd + additionalSizeUsd) / (pos.collateral + addCollateralAmt);
-        core.validateOpenPosition(pos.pairId, pos.trader, pos.isLong, additionalSizeUsd, newLeverage);
+        uint256 newLeverageScaled = ((pos.sizeUsd + additionalSizeUsd) * 10000) / (pos.collateral + addCollateralAmt);
+        core.validateOpenPosition(pos.pairId, pos.trader, pos.isLong, additionalSizeUsd, newLeverageScaled);
 
         ConfidentialCoreV1.ImpactResult memory impact = core.calcImpact(pos.pairId, pos.isLong, additionalSizeUsd);
         uint256 addEntryPrice = currentPrice;

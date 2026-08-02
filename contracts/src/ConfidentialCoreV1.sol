@@ -271,11 +271,11 @@ contract ConfidentialCoreV1 is Initializable {
         address user,
         bool isLong,
         uint256 sizeUsd,
-        uint256 leverage
+        uint256 leverageScaled // leverage * 10000
     ) external view whenNotPaused {
         PairConfig memory pair = pairs[pairId];
         if (!pair.active) revert PairNotActive();
-        if (leverage > pair.maxLeverage) revert ExceedsMaxLeverage();
+        if (leverageScaled > pair.maxLeverage * 10000) revert ExceedsMaxLeverage();
 
         // Check max OI per pair
         if (isLong) {

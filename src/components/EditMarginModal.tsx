@@ -7,6 +7,8 @@ export interface EditMarginData {
   pythPriceId: string
   isLong: boolean
   currentMargin: number
+  currentSize: number
+  maxLeverage: number
 }
 
 interface EditMarginModalProps {
@@ -35,6 +37,20 @@ export default function EditMarginModal({ isOpen, onClose, data }: EditMarginMod
     setPercentage(pct)
     const amt = ((data.currentMargin * pct) / 100).toFixed(2)
     setAmount(amt)
+  }
+
+  const amtNum = Number(amount)
+  let isUnsafe = false
+  if (mode === 'remove' && data && amtNum > 0) {
+    const newMargin = data.currentMargin - amtNum
+    if (newMargin < 5) {
+      isUnsafe = true // Minimum collateral is usually $5 (MIN_COLLATERAL)
+    } else {
+      const newLeverage = data.currentSize / newMargin
+      if (newLeverage > data.maxLeverage) {
+        isUnsafe = true
+      }
+    }
   }
 
   const handleSubmit = async () => {
@@ -135,10 +151,10 @@ export default function EditMarginModal({ isOpen, onClose, data }: EditMarginMod
 
         <button 
           onClick={handleSubmit} 
-          disabled={isTxPending || !amount || Number(amount) <= 0}
-          style={{ width: '100%', padding: '12px', background: isTxPending || !amount || Number(amount) <= 0 ? 'var(--color-bg3)' : 'var(--color-accent)', color: isTxPending || !amount || Number(amount) <= 0 ? '#8e8e93' : '#000', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: isTxPending || !amount || Number(amount) <= 0 ? 'not-allowed' : 'pointer', transition: 'background 0.2s', marginTop: 8 }}
+          disabled={isTxPending || !amount || Number(amount) <= 0 || (mode === 'remove' && isUnsafe)}
+          style={{ width: '100%', padding: '12px', background: isTxPending || !amount || Number(amount) <= 0 || (mode === 'remove' && isUnsafe) ? 'var(--color-bg3)' : 'var(--color-accent)', color: isTxPending || !amount || Number(amount) <= 0 || (mode === 'remove' && isUnsafe) ? '#8e8e93' : '#000', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: isTxPending || !amount || Number(amount) <= 0 || (mode === 'remove' && isUnsafe) ? 'not-allowed' : 'pointer', transition: 'background 0.2s', marginTop: 8 }}
         >
-          {isTxPending ? 'Processing...' : 'Confirm'}
+          {isTxPending ? 'Processing...' : (mode === 'remove' && isUnsafe) ? 'Unsafe (Exceeds Max Leverage)' : 'Confirm'}
         </button>
       </div>
     </div>

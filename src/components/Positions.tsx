@@ -170,7 +170,9 @@ export default function Positions() {
                                 pair: pairName,
                                 pythPriceId: matchedMarket?.pythPriceId || '',
                                 isLong: p.isLong,
-                                currentMargin: p.collateral
+                                currentMargin: p.collateral,
+                                currentSize: p.sizeUsd,
+                                maxLeverage: matchedMarket?.maxLeverage || 100
                               })}
                               title="Edit Margin"
                             >
