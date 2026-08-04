@@ -20,7 +20,8 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Welcome to Confidential', link: '/overview/introduction' },
-          { text: 'System Architecture', link: '/overview/architecture' }
+          { text: 'System Architecture', link: '/overview/architecture' },
+          { text: 'Roadmap', link: '/overview/roadmap' }
         ]
       },
       {
