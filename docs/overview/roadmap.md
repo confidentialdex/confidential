@@ -21,6 +21,9 @@ Below is an outline of our development phases. Please note that this roadmap is 
 ## 🟢 Phase 2: Security, Arc Testnet Hardening & Opt-In Privacy (Q4 2026)
 *Laying the secure foundation, integrating LP privacy, and optimizing for the Arc Network ecosystem while the Public Testnet remains running.*
 
+- **Operations & Team:**
+  - Successfully close the Seed funding round to accelerate protocol growth.
+  - Make key strategic hires across core engineering and marketing to scale the ecosystem.
 - **Technical Plan:** 
   - Upgrade our vault infrastructure to support confidential, zero-knowledge based deposits and withdrawals for institutional players.
   - Complete rigorous internal stress-testing of our emergency Auto-Deleveraging (ADL) thresholds.
