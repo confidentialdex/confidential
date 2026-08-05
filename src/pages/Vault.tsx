@@ -460,8 +460,8 @@ export default function Vault() {
       <style>{`
         .vault-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 40px 24px; min-height: calc(100vh - 60px); }
         .vault-hero { text-align: center; margin-bottom: 40px; }
-        .vault-hero h1 { font-size: 32px; font-weight: 600; color: var(--color-text1); margin: 0 0 12px 0; }
-        .vault-subtitle { color: var(--color-text2); font-size: 16px; max-width: 600px; margin: 0 auto 32px auto; }
+        .vault-hero h1 { font-size: 32px; font-weight: 600; color: var(--color-text1); margin: 0 0 4px 0; }
+        .vault-subtitle { color: var(--color-text2); font-size: 16px; max-width: 600px; margin: 0 auto 24px auto; }
         
         .vault-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
         .stat-card { padding: 20px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg1); }
@@ -545,7 +545,8 @@ export default function Vault() {
           .vault-container { padding: 24px 16px; }
           .vault-stats-grid { grid-template-columns: 1fr; gap: 12px; }
           .stat-card { padding: 16px; text-align: center; }
-          .vault-hero h1 { font-size: 26px; }
+          .vault-hero h1 { font-size: 22px !important; }
+          .vault-subtitle { font-size: 13px !important; }
           
           .tc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding-bottom: 16px; }
           .dh-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; }

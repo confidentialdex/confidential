@@ -30,6 +30,7 @@ function getOrCreateTraderStat(trader: Bytes): TraderStat {
     stat.totalLoss = BigInt.fromI32(0)
     stat.netPnl = BigInt.fromI32(0)
     stat.totalVolume = BigInt.fromI32(0)
+    stat.totalCollateral = BigInt.fromI32(0)
     stat.tradesCount = 0
     stat.winCount = 0
     stat.save()
@@ -183,6 +184,7 @@ export function handlePositionClosed(event: PositionClosed): void {
     }
     traderStat.netPnl = traderStat.netPnl.plus(pnl)
     traderStat.totalVolume = traderStat.totalVolume.plus(position.sizeUsd)
+    traderStat.totalCollateral = traderStat.totalCollateral.plus(position.collateral)
     traderStat.tradesCount += 1
     traderStat.save()
   }
@@ -229,6 +231,7 @@ export function handlePositionLiquidated(event: PositionLiquidated): void {
     traderStat.totalLoss = traderStat.totalLoss.plus(pnl.abs())
     traderStat.netPnl = traderStat.netPnl.plus(pnl)
     traderStat.totalVolume = traderStat.totalVolume.plus(position.sizeUsd)
+    traderStat.totalCollateral = traderStat.totalCollateral.plus(position.collateral)
     traderStat.tradesCount += 1
     traderStat.save()
   }

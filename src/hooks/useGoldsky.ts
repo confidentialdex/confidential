@@ -236,6 +236,7 @@ export interface TraderStat {
   totalLoss: number
   netPnl: number
   totalVolume: number
+  totalCollateral: number
   tradesCount: number
   winCount: number
 }
@@ -253,6 +254,7 @@ export function useLeaderboard() {
               totalLoss
               netPnl
               totalVolume
+              totalCollateral
               tradesCount
               winCount
             }
@@ -266,6 +268,7 @@ export function useLeaderboard() {
           totalLoss: Number(formatUnits(BigInt(s.totalLoss), 6)),
           netPnl: Number(formatUnits(BigInt(s.netPnl), 6)),
           totalVolume: s.totalVolume ? Number(formatUnits(BigInt(s.totalVolume), 6)) : 0,
+          totalCollateral: s.totalCollateral ? Number(formatUnits(BigInt(s.totalCollateral), 6)) : 0,
           tradesCount: s.tradesCount,
           winCount: s.winCount
         }))

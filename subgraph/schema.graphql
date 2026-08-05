@@ -90,6 +90,7 @@ type TraderStat @entity {
   totalLoss: BigInt!
   netPnl: BigInt!
   totalVolume: BigInt!
+  totalCollateral: BigInt!
   tradesCount: Int!
   winCount: Int!
 }

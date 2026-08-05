@@ -1,11 +1,11 @@
 import { useLeaderboard, type TraderStat } from '../hooks/useGoldsky'
 
 const MOCK_DATA: TraderStat[] = [
-  { trader: '0x1234567890abcdef1234567890abcdef12345678', totalProfit: 54000.5, totalLoss: 12000, netPnl: 42000.5, totalVolume: 1500000, tradesCount: 150, winCount: 90 },
-  { trader: '0xabcdef1234567890abcdef1234567890abcdef12', totalProfit: 45000, totalLoss: 15000, netPnl: 30000, totalVolume: 1200000, tradesCount: 80, winCount: 50 },
-  { trader: '0x7890abcdef1234567890abcdef1234567890abcd', totalProfit: 30000, totalLoss: 5000, netPnl: 25000, totalVolume: 800000, tradesCount: 120, winCount: 85 },
-  { trader: '0xdef1234567890abcdef1234567890abcdef12345', totalProfit: 20000, totalLoss: 8000, netPnl: 12000, totalVolume: 500000, tradesCount: 60, winCount: 30 },
-  { trader: '0x4567890abcdef1234567890abcdef1234567890a', totalProfit: 15000, totalLoss: 5000, netPnl: 10000, totalVolume: 250000, tradesCount: 45, winCount: 25 },
+  { trader: '0x1234567890abcdef1234567890abcdef12345678', totalProfit: 54000.5, totalLoss: 12000, netPnl: 42000.5, totalVolume: 1500000, totalCollateral: 100000, tradesCount: 150, winCount: 90 },
+  { trader: '0xabcdef1234567890abcdef1234567890abcdef12', totalProfit: 45000, totalLoss: 15000, netPnl: 30000, totalVolume: 1200000, totalCollateral: 80000, tradesCount: 80, winCount: 50 },
+  { trader: '0x7890abcdef1234567890abcdef1234567890abcd', totalProfit: 30000, totalLoss: 5000, netPnl: 25000, totalVolume: 800000, totalCollateral: 60000, tradesCount: 120, winCount: 85 },
+  { trader: '0xdef1234567890abcdef1234567890abcdef12345', totalProfit: 20000, totalLoss: 8000, netPnl: 12000, totalVolume: 500000, totalCollateral: 50000, tradesCount: 60, winCount: 30 },
+  { trader: '0x4567890abcdef1234567890abcdef1234567890a', totalProfit: 15000, totalLoss: 5000, netPnl: 10000, totalVolume: 250000, totalCollateral: 40000, tradesCount: 45, winCount: 25 },
 ]
 
 export default function Leaderboard() {
@@ -36,10 +36,10 @@ export default function Leaderboard() {
   return (
     <div className="leaderboard-container">
       <div className="leaderboard-header">
-        <h1 style={{ fontSize: '32px', fontWeight: 600, color: 'var(--color-text1)', margin: '0 0 12px 0' }}>
+        <h1 style={{ fontSize: '32px', fontWeight: 600, color: 'var(--color-text1)', margin: '0 0 4px 0' }}>
           Leaderboard
         </h1>
-        <p style={{ color: 'var(--color-text2)', fontSize: '16px', margin: '4px 0 0' }}>
+        <p style={{ color: 'var(--color-text2)', fontSize: '16px', margin: '0' }}>
           Top 200 most profitable traders on Confidential DEX
         </p>
       </div>
@@ -56,12 +56,12 @@ export default function Leaderboard() {
                 <th style={{ textAlign: 'center' }}>Total Trades</th>
                 <th style={{ textAlign: 'center' }}>Total Volume</th>
                 <th style={{ textAlign: 'center' }}>Net PnL</th>
-                <th style={{ textAlign: 'right' }}>Win Rate</th>
+                <th style={{ textAlign: 'center' }}>ROE</th>
               </tr>
             </thead>
             <tbody>
               {displayData.map((stat, idx) => {
-                const winRate = stat.tradesCount > 0 ? (stat.winCount / stat.tradesCount) * 100 : 0
+                const roi = stat.totalCollateral > 0 ? (stat.netPnl / stat.totalCollateral) * 100 : 0
                 const rank = idx + 1
                 return (
                   <tr key={stat.trader} className={`rank-row-${rank}`}>
@@ -80,16 +80,16 @@ export default function Leaderboard() {
                     <td className="font-mono" style={{ textAlign: 'center', fontWeight: 600, fontSize: '14px', color: stat.netPnl >= 0 ? 'var(--color-green)' : 'var(--color-red)' }}>
                       {stat.netPnl >= 0 ? '+' : ''}{formatMoney(stat.netPnl)}
                     </td>
-                    <td style={{ textAlign: 'right' }}>
+                    <td style={{ textAlign: 'center' }}>
                       <span style={{ 
-                        color: winRate >= 50 ? 'var(--color-green)' : 'var(--color-red)',
-                        background: winRate >= 50 ? 'var(--color-green-dim)' : 'var(--color-red-dim)',
+                        color: roi >= 0 ? 'var(--color-green)' : 'var(--color-red)',
+                        background: roi >= 0 ? 'var(--color-green-dim)' : 'var(--color-red-dim)',
                         padding: '4px 8px',
                         borderRadius: '4px',
                         fontWeight: 600,
                         fontSize: '12px'
                       }}>
-                        {winRate.toFixed(1)}%
+                        {roi >= 0 ? '+' : ''}{roi.toFixed(1)}%
                       </span>
                     </td>
                   </tr>
@@ -165,7 +165,8 @@ export default function Leaderboard() {
 
         @media (max-width: 768px) {
           .leaderboard-container { padding: 24px 8px; }
-          .leaderboard-header h1 { font-size: 24px !important; }
+          .leaderboard-header h1 { font-size: 22px !important; }
+          .leaderboard-header p { font-size: 13px !important; }
           .leaderboard-table-container {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
