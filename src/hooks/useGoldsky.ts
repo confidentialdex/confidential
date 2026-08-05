@@ -230,6 +230,56 @@ export function useClosedPositions(userAddress?: string) {
   return { closedPositions, isLoading }
 }
 
+export interface TraderStat {
+  trader: string
+  totalProfit: number
+  totalLoss: number
+  netPnl: number
+  totalVolume: number
+  tradesCount: number
+  winCount: number
+}
+
+export function useLeaderboard() {
+  const { data: leaderboard = [], isLoading } = useQuery<TraderStat[]>({
+    queryKey: ['goldskyLeaderboard'],
+    queryFn: async () => {
+      try {
+        const query = gql`
+          query GetLeaderboard {
+            traderStats(first: 200, orderBy: netPnl, orderDirection: desc) {
+              trader
+              totalProfit
+              totalLoss
+              netPnl
+              totalVolume
+              tradesCount
+              winCount
+            }
+          }
+        `
+        const data: any = await gqlClient.request(query)
+        
+        return data.traderStats.map((s: any) => ({
+          trader: s.trader,
+          totalProfit: Number(formatUnits(BigInt(s.totalProfit), 6)),
+          totalLoss: Number(formatUnits(BigInt(s.totalLoss), 6)),
+          netPnl: Number(formatUnits(BigInt(s.netPnl), 6)),
+          totalVolume: s.totalVolume ? Number(formatUnits(BigInt(s.totalVolume), 6)) : 0,
+          tradesCount: s.tradesCount,
+          winCount: s.winCount
+        }))
+      } catch (e) {
+        console.error("Goldsky Leaderboard Fetch Error:", e)
+        return []
+      }
+    },
+    refetchInterval: 30000
+  })
+
+  return { leaderboard, isLoading }
+}
+
 export function useMarketVolumes() {
   const updateMarketVolume = useTradeStore(state => state.updateMarketVolume)
 

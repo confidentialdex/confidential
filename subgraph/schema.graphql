@@ -82,3 +82,15 @@ type VaultStat @entity {
   tvlUsdc: BigInt!
   totalShares: BigInt!
 }
+
+type TraderStat @entity {
+  id: ID! # trader address
+  trader: Bytes!
+  totalProfit: BigInt!
+  totalLoss: BigInt!
+  netPnl: BigInt!
+  totalVolume: BigInt!
+  tradesCount: Int!
+  winCount: Int!
+}
+

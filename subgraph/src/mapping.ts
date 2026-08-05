@@ -18,7 +18,24 @@ import {
   Deposit,
   Withdraw
 } from "../generated/ConfidentialVault/ConfidentialVault"
-import { Position, Order, TradeRecord, VaultDeposit, PairDayData, PairStat, VaultStat } from "../generated/schema"
+import { Position, Order, TradeRecord, VaultDeposit, PairDayData, PairStat, VaultStat, TraderStat } from "../generated/schema"
+
+function getOrCreateTraderStat(trader: Bytes): TraderStat {
+  let id = trader.toHexString()
+  let stat = TraderStat.load(id)
+  if (stat == null) {
+    stat = new TraderStat(id)
+    stat.trader = trader
+    stat.totalProfit = BigInt.fromI32(0)
+    stat.totalLoss = BigInt.fromI32(0)
+    stat.netPnl = BigInt.fromI32(0)
+    stat.totalVolume = BigInt.fromI32(0)
+    stat.tradesCount = 0
+    stat.winCount = 0
+    stat.save()
+  }
+  return stat
+}
 
 function getOrCreatePairStat(pairId: Bytes): PairStat {
   let id = pairId.toHexString()
@@ -154,6 +171,20 @@ export function handlePositionClosed(event: PositionClosed): void {
       stat.shortOI = stat.shortOI.minus(position.sizeUsd)
     }
     stat.save()
+
+    // Update TraderStat
+    let traderStat = getOrCreateTraderStat(position.trader)
+    let pnl = event.params.pnl
+    if (pnl.gt(BigInt.fromI32(0))) {
+      traderStat.totalProfit = traderStat.totalProfit.plus(pnl)
+      traderStat.winCount += 1
+    } else if (pnl.lt(BigInt.fromI32(0))) {
+      traderStat.totalLoss = traderStat.totalLoss.plus(pnl.abs())
+    }
+    traderStat.netPnl = traderStat.netPnl.plus(pnl)
+    traderStat.totalVolume = traderStat.totalVolume.plus(position.sizeUsd)
+    traderStat.tradesCount += 1
+    traderStat.save()
   }
 }
 
@@ -191,6 +222,15 @@ export function handlePositionLiquidated(event: PositionLiquidated): void {
       stat.shortOI = stat.shortOI.minus(position.sizeUsd)
     }
     stat.save()
+
+    // Update TraderStat
+    let traderStat = getOrCreateTraderStat(position.trader)
+    let pnl = position.collateral.times(BigInt.fromI32(-1))
+    traderStat.totalLoss = traderStat.totalLoss.plus(pnl.abs())
+    traderStat.netPnl = traderStat.netPnl.plus(pnl)
+    traderStat.totalVolume = traderStat.totalVolume.plus(position.sizeUsd)
+    traderStat.tradesCount += 1
+    traderStat.save()
   }
 }
 

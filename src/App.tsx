@@ -5,6 +5,7 @@ import Topbar from './components/Topbar'
 import Trade from './pages/Trade'
 import Vault from './pages/Vault'
 import Portfolio from './pages/Portfolio'
+import Leaderboard from './pages/Leaderboard'
 import Home from './pages/Home'
 import { usePythPrices } from './hooks/usePythPrices'
 import { useMarketVolumes } from './hooks/useGoldsky'
@@ -77,7 +78,7 @@ export default function App() {
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/referrals" element={<DummyPage title="Referrals" />} />
           <Route path="/points" element={<DummyPage title="Points" />} />
-          <Route path="/leaderboard" element={<DummyPage title="Leaderboard" />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
 
           {/* Catch-all: redirect any unknown route to Home */}
           <Route path="*" element={<Navigate to="/" replace />} />
