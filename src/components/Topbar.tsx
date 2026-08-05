@@ -869,6 +869,11 @@ export default function Topbar() {
           color: var(--color-text1);
         }
         
+        @keyframes slideInUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+
         @media (max-width: 768px) {
           .msp-tabs {
             gap: 10px;
@@ -884,14 +889,17 @@ export default function Topbar() {
             display: none;
           }
           .market-selector-panel {
-            height: 100%;
-            max-height: 100vh;
-            border-radius: 0;
+            height: 92vh !important;
+            max-height: 92vh !important;
+            border-radius: 20px 20px 0 0 !important;
             border: none;
             width: 100%;
+            animation: slideInUp 350ms cubic-bezier(0.16, 1, 0.3, 1) !important;
           }
           .market-selector-backdrop {
             padding: 0;
+            align-items: flex-end !important;
+            justify-content: center !important;
           }
           .msp-th {
             font-size: 8px;

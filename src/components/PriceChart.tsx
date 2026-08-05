@@ -179,48 +179,6 @@ export default function PriceChart() {
         </button>
       )}
       <div id="tv_chart_container" ref={chartContainerRef} style={{ width: '100%', height: '100%' }} />
-      {/* Centered watermark — logo + Confidential (Binance style) */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '42%',
-          left: '50%',
-          transform: 'translate(-50%, -50%) scaleY(1.15)',
-          pointerEvents: 'none',
-          zIndex: 5,
-          userSelect: 'none',
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: isMobile ? '6px' : '8px',
-          opacity: 0.06,
-        }}
-      >
-        <img
-          src="/logo.png"
-          alt=""
-          draggable={false}
-          style={{
-            width: isMobile ? '18px' : '40px',
-            height: isMobile ? '18px' : '40px',
-            borderRadius: '50%',
-            objectFit: 'contain',
-            filter: 'grayscale(100%) brightness(3)',
-          }}
-        />
-        <span
-          style={{
-            fontSize: isMobile ? '12px' : '28px',
-            fontWeight: 600,
-            letterSpacing: '3px',
-            color: '#FFFFFF',
-            fontFamily: "'Inter', 'Segoe UI', sans-serif",
-            textTransform: 'uppercase',
-          }}
-        >
-          Confidential
-        </span>
-      </div>
     </div>
   )
 }

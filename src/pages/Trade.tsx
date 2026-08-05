@@ -7,6 +7,7 @@ import OrderBook from '../components/OrderBook'
 import OrderForm from '../components/OrderForm'
 import Positions from '../components/Positions'
 import Portfolio from './Portfolio'
+import SplashScreen from '../components/SplashScreen'
 
 import { useTradeStore } from '../store/useTradeStore'
 import { useAll24hVolumes, usePairStats } from '../hooks/useGoldsky'
@@ -139,6 +140,7 @@ export default function Trade() {
 
   return (
     <div className="trade-layout">
+      <SplashScreen />
       <div className={`trade-middle ${mobileNav !== 'markets' ? 'mobile-hidden' : ''}`}>
         <div className="trade-middle-top">
           <div className="trade-center">

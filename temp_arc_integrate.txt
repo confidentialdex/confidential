@@ -1,0 +1,164 @@
+Integrate with Arc - Arc Docs
+Documentation Index
+Fetch the complete documentation index at:
+/llms.txt
+Use this file to discover all available pages before exploring further.
+Skip to main content
+Arc Network is EVM compatible with some unique differences. Review
+EVM differences
+before building with Arc.
+Arc Docs
+home page
+Search...
+⌘
+K
+Ask Assistant
+Faucet
+Block explorer
+Search...
+Navigation
+Integrate with Arc
+Home
+Arc Network
+Integrate
+Build
+App Kits
+Overview
+Connect to Arc
+Deploy on Arc
+EVM differences
+Exchanges
+Overview
+Detect and process deposits
+Process withdrawals
+Bridge USDC with CCTP
+Custody platforms
+On/off-ramps
+Add Arc to your on/off-ramp platform
+Wallets
+Add Arc to a wallet
+Transaction Lifecycle
+Display transaction fees
+Infrastructure
+Overview
+Index events
+Add Arc to your bridge
+Monitor blocklist compliance
+Run a node
+Running a node
+Node requirements
+Run an Arc node
+Deploying a node as a service
+Monitor a node
+Set up Prometheus and Grafana for an Arc node
+On this page
+Exchanges
+On/off-ramps
+Wallets
+Infrastructure
+Essentials
+Integrate with Arc
+Copy page
+Copy page
+Connect wallets, exchanges, and infrastructure to the Arc network.
+Copy page
+Copy page
+Arc is
+EVM-compatible
+—it supports the same
+bytecode, RPC methods, and tooling as Ethereum. Three key differences drive most
+integration work:
+USDC as gas
+—fees are paid in USDC, not a volatile native token. This
+affects gas estimation, fee display, and balance APIs.
+Deterministic finality
+—transactions finalize in under one second with no
+risk of reorganization. A single confirmation is sufficient.
+Dual USDC interface
+—native balance uses 18 decimals while the ERC-20
+interface uses 6 decimals. Both share the same underlying balance.
+See
+EVM compatibility
+for a full list of
+differences from Ethereum.
+​
+Exchanges
+Integrate Arc deposits, withdrawals, and USDC liquidity management into your
+exchange.
+Exchange integration
+Overview of deposit, withdrawal, and bridging workflows for exchanges.
+Detect deposits
+Subscribe to blocks and detect incoming USDC transfers with one-confirmation
+finality.
+Process withdrawals
+Build, sign, and broadcast withdrawal transactions with USDC gas.
+Bridge USDC (CCTP)
+Move USDC liquidity to and from Arc using Cross-Chain Transfer Protocol.
+Custody providers
+Configure Fireblocks, BitGo, SAFE, and other custody platforms for Arc.
+​
+On/off-ramps
+Add Arc as a supported network in your fiat-to-crypto ramp service.
+On/off-ramp integration
+Chain registration, deposit detection, withdrawal processing, and UI display
+for ramp providers.
+​
+Wallets
+Add Arc as a supported network in your wallet application.
+Wallet integration
+Chain configuration, balance display, transaction history, and fee handling
+for wallet providers.
+Transaction lifecycle
+Arc’s two-state transaction model—pending or final, with no intermediate
+confirmation states.
+Fee display
+Fetch, estimate, and display transaction fees in USDC.
+​
+Infrastructure
+Add Arc support to node services, data indexers, oracle networks, block
+explorers, and compliance tools.
+Infrastructure integration
+Key differences from standard EVM chains and chain metadata for
+infrastructure providers.
+Index events
+Unified transfer events, no-reorg indexing, and block streaming guidance.
+Bridges
+Finality configuration, CCTP routing, and relay infrastructure for bridge
+protocols.
+Compliance
+Blocklist enforcement, Memo contract monitoring, and compliance tool
+integrations.
+​
+Essentials
+Connect to Arc
+RPC endpoints, chain ID, WebSocket URLs, and explorer links.
+Deploy on Arc
+Deploy, test, and interact with a Solidity smart contract on Arc.
+EVM compatibility
+Full EVM differences table, dual USDC interface, and integration pitfalls.
+Run a node
+Operate your own Arc node for independent verification or direct RPC access.
+Was this page helpful?
+Yes
+No
+Connect to Arc
+⌘
+I
+Arc Docs
+home page
+x
+discord
+Links
+Network status
+Blog
+Community
+Arc homepage
+Resources
+Terms of service
+Privacy policy
+Cookie policy
+llms.txt
+x
+discord
+Assistant
+Responses are generated using AI and may contain mistakes.
