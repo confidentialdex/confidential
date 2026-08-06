@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { WagmiProvider } from '@privy-io/wagmi'
-import { http, fallback, createConfig } from 'wagmi'
+import { http, webSocket, fallback, createConfig } from 'wagmi'
 import { injected, walletConnect } from 'wagmi/connectors'
 import { arcTestnet } from './config/chain'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -18,10 +18,11 @@ const wagmiConfig = createConfig({
   chains: [arcTestnet],
   transports: {
     [arcTestnet.id]: fallback([
+      webSocket('wss://rpc.testnet.arc.io'),
+      http('https://rpc.testnet.arc.io'),
       http('https://rpc.quicknode.testnet.arc.io'),
-      http('https://5042002.rpc.thirdweb.com'),
-      http('https://rpc.drpc.testnet.arc.io'),
       http('https://rpc.blockdaemon.testnet.arc.io'),
+      http('https://rpc.drpc.testnet.arc.io'),
     ]),
   },
   connectors: [
