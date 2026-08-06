@@ -40,7 +40,7 @@ export default function Leaderboard() {
           Leaderboard
         </h1>
         <p style={{ color: 'var(--color-text2)', fontSize: '16px', margin: '0' }}>
-          Top 200 most profitable traders on Confidential DEX
+          Top most profitable traders on Confidential DEX
         </p>
       </div>
 
