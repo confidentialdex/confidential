@@ -69,7 +69,7 @@ interface TradeStore {
   watchlist: string[]
   setActiveMarket: (id: string) => void
   toggleWatchlist: (id: string) => void
-  updateMarketPrice: (id: string, price: number, conf?: number) => void
+  updateMarketPrice: (id: string, price: number, conf?: number, publishTime?: number) => void
   setMarketHistoricalPrices: (prices: Record<string, number>) => void
   updateMarketVolume: (pairHash: string, volume24h: number) => void
 
@@ -130,7 +130,7 @@ export const useTradeStore = create<TradeStore>()(
           ? state.watchlist.filter(w => w !== id) 
           : [...state.watchlist, id]
       })),
-      updateMarketPrice: (id, price, conf) => {
+      updateMarketPrice: (id, price, conf, publishTime) => {
         set((state) => ({
           markets: state.markets.map((m) =>
             m.id === id
@@ -142,7 +142,7 @@ export const useTradeStore = create<TradeStore>()(
                   change24h: m.prevPrice > 0 ? +(((price - m.prevPrice) / m.prevPrice) * 100).toFixed(2) : 0,
                   high24h: Math.max(m.high24h, price),
                   low24h: m.low24h > 0 ? Math.min(m.low24h, price) : price,
-                  lastUpdate: Date.now(),
+                  lastUpdate: publishTime || Date.now(),
                 }
               : m
           ),

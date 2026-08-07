@@ -41,6 +41,7 @@ export function usePythPrices() {
           const expo = Number(priceData.expo)
           const newPrice = Number(rawPrice * Math.pow(10, expo))
           const newConf = Number(rawConf * Math.pow(10, expo))
+          const publishTime = Number(priceData.publish_time) * 1000
 
           if (newPrice > 0) {
             // On first load, also set high/low/prevPrice
@@ -56,13 +57,13 @@ export function usePythPrices() {
                       change24h: 0,
                       high24h: newPrice * 1.005,
                       low24h: newPrice * 0.995,
-                      lastUpdate: Date.now(),
+                      lastUpdate: publishTime || Date.now(),
                     }
                   : m
               )
               useTradeStore.setState({ markets: updatedMarkets })
             } else {
-              state.updateMarketPrice(market.id, newPrice, newConf)
+              state.updateMarketPrice(market.id, newPrice, newConf, publishTime)
             }
           }
         }
