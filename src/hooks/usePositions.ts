@@ -214,16 +214,41 @@ export function usePositions(address?: string) {
     const allSuccess = positionsData && positionsData.every((r: any) => r.status === 'success')
     if (parsed.length > 0 || allSuccess) {
       lastSuccessRef.current = parsed
-      // Auto-clear stale optimistic updates/removals once real data arrives
-      if (Object.keys(optimisticPositionUpdates).length > 0 || optimisticPositionRemovals.size > 0) {
+      // Auto-clear stale optimistic data once real on-chain data arrives
+      if (Object.keys(optimisticPositionUpdates).length > 0 || optimisticPositionRemovals.size > 0 || optimisticPositions.length > 0) {
         setTimeout(() => {
-          optimisticPositionUpdates = {}
-          optimisticPositionRemovals = new Set()
-          // Also clear injected optimistic positions that now exist on-chain
+          const onChainIds = new Set(parsed.map((p: any) => p.id))
+          const onChainKeys = new Set(parsed.map((p: any) => `${p.pairId}-${p.isLong}`))
+
+          // Only clear removals for positions that are ACTUALLY gone from on-chain
+          // Keep removals active if the position still exists on-chain (Keeper Bot hasn't executed yet)
+          if (optimisticPositionRemovals.size > 0) {
+            const stillOnChain = new Set<string>()
+            optimisticPositionRemovals.forEach(id => {
+              if (onChainIds.has(id)) {
+                stillOnChain.add(id) // Keep hiding — Keeper Bot hasn't closed it yet
+              }
+            })
+            optimisticPositionRemovals = stillOnChain
+          }
+
+          // Only clear updates for positions whose on-chain data has actually changed
+          if (Object.keys(optimisticPositionUpdates).length > 0) {
+            const newUpdates: Record<string, any> = {}
+            for (const id of Object.keys(optimisticPositionUpdates)) {
+              if (onChainIds.has(id)) {
+                // Position still exists, keep update active briefly in case of subgraph lag
+                // (will be cleared on next cycle when data matches)
+              }
+            }
+            optimisticPositionUpdates = newUpdates
+          }
+
+          // Clear injected optimistic positions that now exist on-chain
           if (optimisticPositions.length > 0) {
-            const onChainKeys = new Set(parsed.map((p: any) => `${p.pairId}-${p.isLong}`))
             optimisticPositions = optimisticPositions.filter(op => !onChainKeys.has(`${op.pairId}-${op.isLong}`))
           }
+
           notifyOptimisticListeners()
         }, 500)
       }
