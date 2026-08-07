@@ -308,8 +308,7 @@ contract ConfidentialTradingV1 is ReentrancyGuard, Initializable {
         require(order.isActive, "Not active");
 
         // FIX LOW-2: Handle expired orders gracefully — refund and reset flags
-        uint256 expiration = (order.orderType == 2 || order.orderType == 3) ? 10 seconds : maxOrderAge;
-        if (block.timestamp > order.createdAt + expiration) {
+        if (block.timestamp > order.createdAt + maxOrderAge) {
             order.isActive = false;
             if (order.orderType == 3 || order.orderType == 5 || order.orderType == 6 || order.orderType == 7) {
                 hasActiveCloseRequest[order.positionId] = false;
