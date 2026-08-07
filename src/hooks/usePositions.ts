@@ -1,4 +1,4 @@
-import { useReadContracts } from 'wagmi'
+import { useReadContracts, useReadContract } from 'wagmi'
 import { CONTRACTS, ABIS } from '../config/contracts'
 import { arcTestnet } from '../config/chain'
 import { formatUnits } from 'viem'
@@ -326,12 +326,31 @@ export function useOrders(address?: string) {
     refetchInterval: 5000, // 5s auto-refresh
   })
 
-  // 2. Query only the specific active order IDs
+  // 1b. Fetch nextOrderId to manually scan recent orders (to catch Market Orders ignored by Goldsky)
+  const { data: nextOrderIdRaw } = useReadContract({
+    address: CONTRACTS.TRADING as any,
+    abi: ABIS.TRADING as any,
+    functionName: 'nextOrderId',
+    chainId: arcTestnet.id,
+    query: {
+      refetchInterval: 5000,
+    }
+  })
+
+  // 2. Query specific active order IDs + last 50 orders
   const detailContracts = useMemo(() => {
-    if (!address || !goldskyOrderIds) return []
+    if (!address) return []
     
     // Create a Set to ensure unique IDs
-    const ids = new Set<bigint>(goldskyOrderIds)
+    const ids = new Set<bigint>(goldskyOrderIds || [])
+    
+    if (nextOrderIdRaw) {
+      const nextId = Number(nextOrderIdRaw)
+      const startId = Math.max(1, nextId - 50)
+      for (let i = startId; i < nextId; i++) {
+        ids.add(BigInt(i))
+      }
+    }
     
     return Array.from(ids).map((id) => ({
       address: CONTRACTS.TRADING as any,
@@ -340,7 +359,7 @@ export function useOrders(address?: string) {
       args: [id],
       chainId: arcTestnet.id,
     }))
-  }, [address, goldskyOrderIds])
+  }, [address, goldskyOrderIds, nextOrderIdRaw])
 
   const { data: ordersData, refetch: refetchDetails, isLoading: isDetailsLoading } = useReadContracts({
     contracts: detailContracts,
