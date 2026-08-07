@@ -39,9 +39,12 @@ export default function Positions() {
 
   // Use on-chain positions for open positions tab
   const openPositions = activePositions
-  // Filter out temporary market requests (2=MarketOpen, 3=MarketClose, 6=PartialClose, 7=RemoveCol) from Orders tab
-  const displayOrders = openOrders.filter(o => o.orderType !== 2 && o.orderType !== 3 && o.orderType !== 6 && o.orderType !== 7)
-
+  // Show limit/stop orders, AND stuck market orders (> 60s)
+  const now = Date.now();
+  const displayOrders = openOrders.filter(o => 
+    (o.orderType !== 2 && o.orderType !== 3 && o.orderType !== 6 && o.orderType !== 7) ||
+    (now - o.createdAt > 60000)
+  )
 
 
   const formatTime = (ts: number) => {

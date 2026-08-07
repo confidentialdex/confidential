@@ -88,6 +88,8 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
   const maxOISide = side === 'long' ? maxLongOIVal : maxShortOIVal
   const availableLiquidity = side === 'long' ? Math.max(0, maxLongOIVal - longOIVal) : Math.max(0, maxShortOIVal - shortOIVal)
 
+  const isMarketClosed = activeMarket && activeMarket.price > 0 && activeMarket.lastUpdate ? (Date.now() - activeMarket.lastUpdate > 60000) : false;
+
   // ----------------------------------------
 
   useEffect(() => {
@@ -640,7 +642,7 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
       {/* Submit Button */}
       <button 
         onClick={handleSubmit} 
-        disabled={isTxPending || isPositionsLoading || (isConnected && (!sizeNum || isInsufficientBalance || exceedsLiquidity))} 
+        disabled={isTxPending || isMarketClosed || isPositionsLoading || (isConnected && (!sizeNum || isInsufficientBalance || exceedsLiquidity))} 
         style={{ 
           width: '100%', 
           padding: '10px', 
@@ -649,23 +651,25 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
           boxShadow: 'none',
           background: !isConnected 
             ? 'var(--color-green, #26c68b)' 
-            : (isTxPending || isPositionsLoading || !sizeNum || isInsufficientBalance || exceedsLiquidity) 
+            : (isTxPending || isMarketClosed || isPositionsLoading || !sizeNum || isInsufficientBalance || exceedsLiquidity) 
               ? 'var(--color-bg3)' 
               : (side === 'long' ? 'var(--color-green, #26c68b)' : 'var(--color-red)'), 
           color: !isConnected 
             ? '#0b0e11' 
-            : (isTxPending || isPositionsLoading || !sizeNum || isInsufficientBalance || exceedsLiquidity) 
+            : (isTxPending || isMarketClosed || isPositionsLoading || !sizeNum || isInsufficientBalance || exceedsLiquidity) 
               ? '#8e8e93' 
               : (side === 'long' ? '#0b0e11' : '#fff'), 
           fontSize: '15px', 
           fontWeight: 600, 
-          cursor: (isTxPending || isPositionsLoading || (isConnected && (!sizeNum || isInsufficientBalance || exceedsLiquidity))) ? 'not-allowed' : 'pointer',
+          cursor: (isTxPending || isMarketClosed || isPositionsLoading || (isConnected && (!sizeNum || isInsufficientBalance || exceedsLiquidity))) ? 'not-allowed' : 'pointer',
           marginTop: 4
         }}
       >
         {isTxPending 
           ? 'Processing...' 
-          : isPositionsLoading
+          : isMarketClosed
+            ? 'Market Closed'
+            : isPositionsLoading
             ? 'Syncing Positions...'
           : !isConnected 
             ? 'Connect Wallet' 

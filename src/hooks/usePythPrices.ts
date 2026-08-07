@@ -56,6 +56,7 @@ export function usePythPrices() {
                       change24h: 0,
                       high24h: newPrice * 1.005,
                       low24h: newPrice * 0.995,
+                      lastUpdate: Date.now(),
                     }
                   : m
               )
