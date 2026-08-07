@@ -215,10 +215,9 @@ export function usePositions(address?: string) {
     if (parsed.length > 0 || allSuccess) {
       lastSuccessRef.current = parsed
       // Auto-clear stale optimistic data once real on-chain data arrives
-      if (Object.keys(optimisticPositionUpdates).length > 0 || optimisticPositionRemovals.size > 0 || optimisticPositions.length > 0) {
+      if (Object.keys(optimisticPositionUpdates).length > 0 || optimisticPositionRemovals.size > 0) {
         setTimeout(() => {
           const onChainIds = new Set(parsed.map((p: any) => p.id))
-          const onChainKeys = new Set(parsed.map((p: any) => `${p.pairId}-${p.isLong}`))
 
           // Only clear removals for positions that are ACTUALLY gone from on-chain
           // Keep removals active if the position still exists on-chain (Keeper Bot hasn't executed yet)
@@ -232,21 +231,18 @@ export function usePositions(address?: string) {
             optimisticPositionRemovals = stillOnChain
           }
 
-          // Only clear updates for positions whose on-chain data has actually changed
-          if (Object.keys(optimisticPositionUpdates).length > 0) {
-            const newUpdates: Record<string, any> = {}
-            for (const id of Object.keys(optimisticPositionUpdates)) {
-              if (onChainIds.has(id)) {
-                // Position still exists, keep update active briefly in case of subgraph lag
-                // (will be cleared on next cycle when data matches)
-              }
-            }
-            optimisticPositionUpdates = newUpdates
-          }
+          // Clear optimistic updates
+          optimisticPositionUpdates = {}
 
           // Clear injected optimistic positions that now exist on-chain
+          // Exclude removed positions from on-chain keys so new opens for the same pair survive
           if (optimisticPositions.length > 0) {
-            optimisticPositions = optimisticPositions.filter(op => !onChainKeys.has(`${op.pairId}-${op.isLong}`))
+            const activeOnChainKeys = new Set(
+              parsed
+                .filter((p: any) => !optimisticPositionRemovals.has(p.id))
+                .map((p: any) => `${p.pairId}-${p.isLong}`)
+            )
+            optimisticPositions = optimisticPositions.filter(op => !activeOnChainKeys.has(`${op.pairId}-${op.isLong}`))
           }
 
           notifyOptimisticListeners()
