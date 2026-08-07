@@ -143,6 +143,11 @@ async function main() {
     console.log("Setting Trading in Vault...");
     await withRetry(() => vault.setTrading(tradingAddress).then(tx => tx.wait()), "vault.setTrading");
 
+    console.log("Setting Vault Cap...");
+    // Default vault cap to 1,000,000 USDC
+    const vaultCap = ethers.parseUnits("1000000", 6);
+    await withRetry(() => vault.setMaxCapacity(vaultCap).then(tx => tx.wait()), "vault.setMaxCapacity");
+
     // ──────────────────────────────────────────
     //  PHASE 3: Set Treasury
     // ──────────────────────────────────────────
