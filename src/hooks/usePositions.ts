@@ -453,7 +453,19 @@ export function useOrders(address?: string) {
 
     // Remove optimistic orders that now exist on-chain
     const onChainIds = new Set(base.map((o: any) => o.orderId))
-    const filtered = userOptimistic.filter(oo => !onChainIds.has(oo.orderId))
+    const filtered = userOptimistic.filter(oo => {
+      if (onChainIds.has(oo.orderId)) return false
+      
+      // Match by signature since optimistic orderId is -1
+      const existsOnChain = base.some((b: any) => 
+        b.pairId === oo.pairId &&
+        b.isLong === oo.isLong &&
+        b.orderType === oo.orderType &&
+        Math.abs(b.triggerPrice - oo.triggerPrice) < 0.0001 &&
+        Math.abs(b.createdAt - oo.createdAt) < 60000 // within 1 minute
+      )
+      return !existsOnChain
+    })
 
     return [...filtered, ...base]
   }, [onChainOrders, optOrders, optRemovals, address])
