@@ -470,10 +470,24 @@ export function useConfidentialTrading() {
       updateOptimisticPosition(positionId.toString(), (prev: any) => {
         const newSize = prev.sizeUsd + additionalSizeUsd
         const newCollateral = prev.collateral + collateral
+        
+        // Calculate average entry price
+        const prevBase = prev.sizeUsd / prev.entryPrice
+        const addBase = additionalSizeUsd / acceptablePriceUsd
+        const newEntryPrice = newSize / (prevBase + addBase)
+        
+        // Calculate new liquidation price
+        const isLong = prev.isLong
+        const liqPrice = isLong
+          ? newEntryPrice * (1 - (0.9 * newCollateral) / newSize)
+          : newEntryPrice * (1 + (0.9 * newCollateral) / newSize)
+
         return {
           sizeUsd: newSize,
           collateral: newCollateral,
-          leverage: Math.round(newSize / newCollateral)
+          leverage: Math.round(newSize / newCollateral),
+          entryPrice: newEntryPrice,
+          liquidationPrice: liqPrice
         }
       })
 
