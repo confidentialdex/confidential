@@ -421,6 +421,15 @@ export default function OrderForm({ initialSide = 'long', onClose }: OrderFormPr
       {/* Main Trade Card */}
       <div style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-bg1)' }}>
 
+      {isMarketClosed && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#ef444420', color: '#ef4444', padding: '8px', borderRadius: '6px', fontSize: 13, fontWeight: 600 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          MARKET CLOSED
+        </div>
+      )}
+
       {/* Top Bar */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:13 }}>
         <span style={{ color:'#8e8e93' }}>Available to trade</span>

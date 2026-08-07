@@ -142,12 +142,21 @@ export default function Positions() {
                     
                     const pnlPercent = p.collateral > 0 && isFinite(pnl) ? (pnl / p.collateral) * 100 : 0
                     
+                    const isMarketClosed = matchedMarket && matchedMarket.price > 0 && matchedMarket.lastUpdate 
+                      ? (Date.now() - matchedMarket.lastUpdate > 60000) 
+                      : false;
+                    
                     const liveTp = p.tpPrice || 0
                     const liveSl = p.slPrice || 0
                     
                     return (
                       <div key={p.id} className="pos-row" style={{ gridTemplateColumns: "100px 70px 80px 100px 100px 100px 80px 100px 280px", minWidth: "1010px" }}>
-                        <span style={{ fontWeight: 600, textAlign: 'left' }}>{pairName}</span>
+                        <span style={{ fontWeight: 600, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start' }}>
+                          {pairName}
+                          {isMarketClosed && (
+                            <span style={{ fontSize: 9, background: '#ef444420', color: '#ef4444', padding: '2px 4px', borderRadius: 4, whiteSpace: 'nowrap' }}>CLOSED</span>
+                          )}
+                        </span>
                         <span className={p.isLong ? 'text-green' : 'text-red'} style={{ textTransform: 'uppercase', fontSize: 11, fontWeight: 600, textAlign: 'left' }}>
                           {p.isLong ? 'long' : 'short'} {Math.round(p.leverage)}x
                         </span>
@@ -220,7 +229,7 @@ export default function Positions() {
                               </svg>
                             </button>
                             <button 
-                              disabled={p._isOptimistic}
+                              disabled={p._isOptimistic || isMarketClosed}
                               onClick={() => setSelectedPartialClose({
                                 positionId: p.positionId,
                                 pair: pairName,
@@ -228,9 +237,9 @@ export default function Positions() {
                                 isLong: p.isLong,
                                 maxSize: p.sizeUsd
                               })} 
-                              className={`btn-close ${p._isOptimistic ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={`btn-close ${p._isOptimistic || isMarketClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
                               style={{ padding: '4px 8px', marginLeft: '4px' }}
-                              title={p._isOptimistic ? "Pending execution on-chain..." : "Close position"}
+                              title={p._isOptimistic ? "Pending execution on-chain..." : isMarketClosed ? "Market Closed" : "Close position"}
                             >
                               Close
                             </button>
